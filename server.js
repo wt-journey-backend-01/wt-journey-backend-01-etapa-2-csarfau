@@ -1,5 +1,4 @@
 import express from 'express';
-import './scripts/populate.js';
 import { agentesRouter } from './routes/agentesRoutes.js';
 import { casosRouter } from './routes/casosRoutes.js';
 import { errorHandler } from './middlewares/errorHandler.js';

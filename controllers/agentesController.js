@@ -112,7 +112,11 @@ function create(req, res, next) {
  */
 function update(req, res, next) {
   try {
-    const agenteId = z.uuid('Informe um UUID válido.').parse(req.params.id);
+    const { id: agenteId } = z
+      .object({
+        id: z.uuid("O campo 'id' deve ser um UUID válido."),
+      })
+      .parse(req.params);
 
     const agente = agentesRepository.findById(agenteId);
 
@@ -123,7 +127,7 @@ function update(req, res, next) {
     const newAgenteData = newAgenteSchema.parse(req.body);
 
     const updatedAgente = agentesRepository.update(newAgenteData, agenteId);
-    return res.status(200).json(updatedAgente);
+    return res.status(200).json({ data: updatedAgente });
   } catch (err) {
     return next(err);
   }
@@ -138,12 +142,16 @@ function update(req, res, next) {
  */
 function patch(req, res, next) {
   try {
-    const agenteId = z.uuid('Informe um UUID válido.').parse(req.params.id);
+    const { id: agenteId } = z
+      .object({
+        id: z.uuid("O campo 'id' deve ser um UUID válido."),
+      })
+      .parse(req.params);
 
     const agente = agentesRepository.findById(agenteId);
 
     if (!agente) {
-      return next(createError(404, `Agente com ID ${agenteId} não encontrado.`));
+      return next(createError(404, { agente_id: `Agente com ID ${agenteId} não encontrado.` }));
     }
 
     const agenteDataToUpdate = newAgenteSchema.partial().parse(req.body);
@@ -164,7 +172,11 @@ function patch(req, res, next) {
  */
 function remove(req, res, next) {
   try {
-    const agenteId = z.uuid('Informe um UUID válido.').parse(req.params.id);
+    const { id: agenteId } = z
+      .object({
+        id: z.uuid("O campo 'id' deve ser um UUID válido."),
+      })
+      .parse(req.params);
 
     const agente = agentesRepository.findById(agenteId);
 

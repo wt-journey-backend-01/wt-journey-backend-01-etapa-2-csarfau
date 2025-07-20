@@ -12,7 +12,7 @@ const newCasoSchema = z.object({
 });
 
 const searchQuerySchema = z.object({
-  agente_id: z.uuid("O parâmetro 'agente_id' deve ser um UUID válido.").optional(),
+  agente_id: z.uuid("O campo 'agente_id' deve ser um UUID válido.").optional(),
   status: z
     .enum(['aberto', 'solucionado'], "O parâmetro 'status' deve ser somente 'aberto' ou 'solucionado'.")
     .optional(),
@@ -58,7 +58,7 @@ function index(req, res, next) {
  */
 function show(req, res, next) {
   try {
-    const casoId = z.uuid("O parâmetro 'id' deve ser um UUID válido.").parse(req.params.id);
+    const casoId = z.uuid("O campo 'id' deve ser um UUID válido.").parse(req.params.id);
 
     const caso = casosRepository.findById(casoId);
 
@@ -108,7 +108,11 @@ function create(req, res, next) {
  */
 function update(req, res, next) {
   try {
-    const casoId = z.uuid('Informe um UUID válido.').parse(req.params.id);
+    const { id: casoId } = z
+      .object({
+        id: z.uuid("O campo 'id' deve ser um UUID válido."),
+      })
+      .parse(req.params);
 
     const caso = casosRepository.findById(casoId);
 
@@ -140,7 +144,11 @@ function update(req, res, next) {
  */
 function patch(req, res, next) {
   try {
-    const casoId = z.uuid('Informe um UUID válido.').parse(req.params.id);
+    const { id: casoId } = z
+      .object({
+        id: z.uuid("O campo 'id' deve ser um UUID válido."),
+      })
+      .parse(req.params);
 
     const caso = casosRepository.findById(casoId);
 
@@ -174,7 +182,11 @@ function patch(req, res, next) {
  */
 function remove(req, res, next) {
   try {
-    const casoId = z.uuid('Informe um UUID válido.').parse(req.params.id);
+    const { id: casoId } = z
+      .object({
+        id: z.uuid("O campo 'id' deve ser um UUID válido."),
+      })
+      .parse(req.params);
 
     const caso = casosRepository.findById(casoId);
 
@@ -210,6 +222,10 @@ function showResponsibleAgente(req, res, next) {
     const agenteId = caso.agente_id;
 
     const agenteInfo = agentesRepository.findById(agenteId);
+
+    if (!agenteInfo) {
+      return next(createError(404, { agente_id: `Agente com ID: ${agenteId} não encontrado.` }));
+    }
 
     return res.status(200).json({ data: agenteInfo });
   } catch (err) {

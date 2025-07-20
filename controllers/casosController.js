@@ -8,7 +8,7 @@ const newCasoSchema = z.object({
   titulo: z.string("O campo 'titulo' deve ser uma string.").min(1, "O campo 'titulo' é obrigatório."),
   descricao: z.string("O campo 'descricao' deve ser uma string.").min(1, "O campo 'descricao' é obrigatório."),
   status: z.enum(['aberto', 'solucionado'], "O campo 'status' deve ser somente 'aberto' ou 'solucionado'."),
-  agente_id: z.uuidv4("O campo 'agente_id' deve ser um UUID válido."),
+  agente_id: z.uuid("O campo 'agente_id' deve ser um UUID válido."),
 });
 
 const searchQuerySchema = z.object({
@@ -66,13 +66,6 @@ function show(req, res, next) {
       return next(createError(404, { caso_id: `Caso com ID: ${casoId} não encontrado.` }));
     }
 
-    const agenteId = z.uuid("O parâmetro 'agente_id' deve ser um UUID válido.").optional().parse(req.query.agente_id);
-    const agente = agenteId ? agentesRepository.findById(agenteId) : null;
-
-    if (agente) {
-      return res.status(200).json({ data: agente });
-    }
-
     return res.status(200).json({ data: caso });
   } catch (err) {
     next(err);
@@ -128,7 +121,7 @@ function update(req, res, next) {
     const agente = agentesRepository.findById(newCasoData.agente_id);
 
     if (!agente) {
-      return next(createError(404, { agente_id: `Agente com ID ${casoDataToUpdate.agente_id} não encontrado.` }));
+      return next(createError(404, { agente_id: `Agente com ID ${newCasoData.agente_id} não encontrado.` }));
     }
 
     const updatedCaso = casosRepository.update(newCasoData, casoId);
@@ -191,7 +184,34 @@ function remove(req, res, next) {
 
     casosRepository.remove(casoId);
 
-    res.status(204).json();
+    res.status(204).send();
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/** Exibe o agente responsável por um caso específico
+ *
+ * @param { Request } req - Requisição HTTP
+ * @param { Response } res - Resposta HTTP
+ * @param { NextFunction } next - Próximo middleware
+ * @returns { Response }
+ */
+function showResponsibleAgente(req, res, next) {
+  try {
+    const casoId = z.uuid("O parâmetro 'id' deve ser um UUID válido.").parse(req.params.id);
+
+    const caso = casosRepository.findById(casoId);
+
+    if (!caso) {
+      return next(createError(404, { caso_id: `Caso com ID: ${casoId} não encontrado.` }));
+    }
+
+    const agenteId = caso.agente_id;
+
+    const agenteInfo = agentesRepository.findById(agenteId);
+
+    return res.status(200).json({ data: agenteInfo });
   } catch (err) {
     return next(err);
   }
@@ -204,4 +224,5 @@ export const casosController = {
   update,
   patch,
   remove,
+  showResponsibleAgente,
 };

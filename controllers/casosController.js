@@ -1,0 +1,207 @@
+import { casosRepository } from '../repositories/casosRepository.js';
+import { v4 as uuidv4 } from 'uuid';
+import { createError } from '../utils/createError.js';
+import { agentesRepository } from '../repositories/agentesRepository.js';
+import * as z from 'zod';
+
+const newCasoSchema = z.object({
+  titulo: z.string("O campo 'titulo' deve ser uma string.").min(1, "O campo 'titulo' é obrigatório."),
+  descricao: z.string("O campo 'descricao' deve ser uma string.").min(1, "O campo 'descricao' é obrigatório."),
+  status: z.enum(['aberto', 'solucionado'], "O campo 'status' deve ser somente 'aberto' ou 'solucionado'."),
+  agente_id: z.uuidv4("O campo 'agente_id' deve ser um UUID válido."),
+});
+
+const searchQuerySchema = z.object({
+  agente_id: z.uuid("O parâmetro 'agente_id' deve ser um UUID válido.").optional(),
+  status: z
+    .enum(['aberto', 'solucionado'], "O parâmetro 'status' deve ser somente 'aberto' ou 'solucionado'.")
+    .optional(),
+  q: z.string().optional(),
+});
+
+/** Retorna todos os casos salvos
+ *
+ * @param { Response } res
+ * @return { string[] } Casos salvos
+ */
+function index(req, res, next) {
+  try {
+    const { agente_id, status, q } = searchQuerySchema.parse(req.query);
+
+    let casos = casosRepository.findAll();
+
+    if (agente_id) {
+      casos = casos.filter((c) => c.agente_id === agente_id);
+    }
+
+    if (status) {
+      casos = casos.filter((c) => c.status === status);
+    }
+
+    if (q) {
+      const termo = q.toLowerCase();
+      casos = casos.filter((c) => c.titulo.toLowerCase().includes(termo) || c.descricao.toLowerCase().includes(termo));
+    }
+
+    res.status(200).json({ data: casos });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/** Encontra um caso específico
+ *
+ * @param { Request } req - Requisição HTTP
+ * @param { Response } res - Resposta HTTP
+ * @param { NextFunction } next - Próximo middleware
+ * @returns { Response }
+ */
+function show(req, res, next) {
+  try {
+    const casoId = z.uuid("O parâmetro 'id' deve ser um UUID válido.").parse(req.params.id);
+
+    const caso = casosRepository.findById(casoId);
+
+    if (!caso) {
+      return next(createError(404, { caso_id: `Caso com ID: ${casoId} não encontrado.` }));
+    }
+
+    const agenteId = z.uuid("O parâmetro 'agente_id' deve ser um UUID válido.").optional().parse(req.query.agente_id);
+    const agente = agenteId ? agentesRepository.findById(agenteId) : null;
+
+    if (agente) {
+      return res.status(200).json({ data: agente });
+    }
+
+    return res.status(200).json({ data: caso });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** Cria um novo caso
+ *
+ * @param { Request } req - Requisição HTTP
+ * @param { Response } res - Resposta HTTP
+ * @param { NextFunction } next - Próximo middleware
+ * @returns { Response }
+ */
+function create(req, res, next) {
+  try {
+    let newCasoData = newCasoSchema.parse(req.body);
+
+    const agente = agentesRepository.findById(newCasoData.agente_id);
+
+    if (!agente) {
+      return next(createError(404, { agente_id: `Agente com ID ${newCasoData.agente_id} não encontrado.` }));
+    }
+
+    newCasoData = { id: uuidv4(), ...newCasoData };
+
+    const newCaso = casosRepository.create(newCasoData);
+
+    return res.status(201).json({ data: newCaso });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/** Atualiza todas as informações de um caso
+ *
+ * @param { Request } req - Requisição HTTP
+ * @param { Response } res - Resposta HTTP
+ * @param { NextFunction } next - Próximo middleware
+ * @returns { Response }
+ */
+function update(req, res, next) {
+  try {
+    const casoId = z.uuid('Informe um UUID válido.').parse(req.params.id);
+
+    const caso = casosRepository.findById(casoId);
+
+    if (!caso) {
+      return next(createError(404, { caso_id: `Caso com ID: ${casoId} não encontrado.` }));
+    }
+
+    const newCasoData = newCasoSchema.parse(req.body);
+
+    const agente = agentesRepository.findById(newCasoData.agente_id);
+
+    if (!agente) {
+      return next(createError(404, { agente_id: `Agente com ID ${casoDataToUpdate.agente_id} não encontrado.` }));
+    }
+
+    const updatedCaso = casosRepository.update(newCasoData, casoId);
+    return res.status(200).json({ data: updatedCaso });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/** Atualiza informações parciais de um caso
+ *
+ * @param { Request } req - Requisição HTTP
+ * @param { Response } res - Resposta HTTP
+ * @param { NextFunction } next - Próximo middleware
+ * @returns { Response }
+ */
+function patch(req, res, next) {
+  try {
+    const casoId = z.uuid('Informe um UUID válido.').parse(req.params.id);
+
+    const caso = casosRepository.findById(casoId);
+
+    if (!caso) {
+      return next(createError(404, { caso_id: `Caso com ID: ${casoId} não encontrado.` }));
+    }
+
+    const casoDataToUpdate = newCasoSchema.partial().parse(req.body);
+
+    if (casoDataToUpdate.agente_id) {
+      const agente = agentesRepository.findById(casoDataToUpdate.agente_id);
+
+      if (!agente) {
+        return next(createError(404, { agente_id: `Agente com ID ${casoDataToUpdate.agente_id} não encontrado.` }));
+      }
+    }
+
+    const updatedCaso = casosRepository.update(casoDataToUpdate, casoId);
+    return res.status(200).json({ data: updatedCaso });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/** Remove um caso
+ *
+ * @param { Request } req - Requisição HTTP
+ * @param { Response } res - Resposta HTTP
+ * @param { NextFunction } next - Próximo middleware
+ * @returns { Response }
+ */
+function remove(req, res, next) {
+  try {
+    const casoId = z.uuid('Informe um UUID válido.').parse(req.params.id);
+
+    const caso = casosRepository.findById(casoId);
+
+    if (!caso) {
+      return next(createError(404, { caso_id: `Caso com ID: ${casoId} não encontrado.` }));
+    }
+
+    casosRepository.remove(casoId);
+
+    res.status(204).json();
+  } catch (err) {
+    return next(err);
+  }
+}
+
+export const casosController = {
+  index,
+  show,
+  create,
+  update,
+  patch,
+  remove,
+};

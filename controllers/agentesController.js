@@ -120,7 +120,7 @@ function update(req, res, next) {
       return next(createError(404, { agente_id: `Agente com o ID: ${agenteId} não encontrado.` }));
     }
 
-    const newAgenteData = newAgenteSchema.partial().parse(req.body);
+    const newAgenteData = newAgenteSchema.parse(req.body);
 
     const updatedAgente = agentesRepository.update(newAgenteData, agenteId);
     return res.status(200).json(updatedAgente);
@@ -146,7 +146,7 @@ function patch(req, res, next) {
       return next(createError(404, `Agente com ID ${agenteId} não encontrado.`));
     }
 
-    const agenteDataToUpdate = patchAgenteSchema.parse(req.body);
+    const agenteDataToUpdate = newAgenteSchema.partial().parse(req.body);
 
     const updatedAgente = agentesRepository.update(agenteDataToUpdate, agenteId);
     return res.status(200).json({ data: updatedAgente });
@@ -174,7 +174,7 @@ function remove(req, res, next) {
 
     agentesRepository.remove(agenteId);
 
-    res.status(204).json();
+    res.status(204).send();
   } catch (err) {
     return next(err);
   }

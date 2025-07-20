@@ -9,6 +9,9 @@ router.get(['/', '/search'], casosController.index);
 // GET /casos/:id → Retorna os detalhes de um caso específico.
 router.get('/:id', casosController.show);
 
+// GET /casos/:caso_id/agente → Retorna os dados completos do agente responsável por um caso específico.
+router.get('/:id/agente', casosController.showResponsibleAgente);
+
 // POST /casos → Cria um novo caso com os seguintes campos:
 router.post('/', casosController.create);
 

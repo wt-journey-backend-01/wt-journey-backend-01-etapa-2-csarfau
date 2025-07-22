@@ -16,7 +16,7 @@ const searchQuerySchema = z.object({
   status: z
     .enum(['aberto', 'solucionado'], "O parâmetro 'status' deve ser somente 'aberto' ou 'solucionado'.")
     .optional(),
-  q: z.string().optional(),
+  q: z.string('O termo de busca deve ser uma string').optional(),
 });
 
 /** Retorna todos os casos salvos
@@ -43,7 +43,15 @@ function index(req, res, next) {
       casos = casos.filter((c) => c.titulo.toLowerCase().includes(termo) || c.descricao.toLowerCase().includes(termo));
     }
 
-    res.status(200).json({ data: casos });
+    if ((agente_id || status || q) && casos.length < 1) {
+      return next(createError(404, { query: 'Não foram encontrados casos com os parâmetros informados.' }));
+    }
+
+    if (casos.length < 1) {
+      return next(createError(404, { casos: 'Nenhum caso encontrado.' }));
+    }
+
+    res.status(200).json(casos);
   } catch (err) {
     return next(err);
   }
@@ -58,7 +66,11 @@ function index(req, res, next) {
  */
 function show(req, res, next) {
   try {
-    const casoId = z.uuid("O campo 'id' deve ser um UUID válido.").parse(req.params.id);
+    const { id: casoId } = z
+      .object({
+        id: z.uuid("O campo 'id' deve ser um UUID válido."),
+      })
+      .parse(req.params);
 
     const caso = casosRepository.findById(casoId);
 
@@ -66,7 +78,7 @@ function show(req, res, next) {
       return next(createError(404, { caso_id: `Caso com ID: ${casoId} não encontrado.` }));
     }
 
-    return res.status(200).json({ data: caso });
+    return res.status(200).json(caso);
   } catch (err) {
     next(err);
   }
@@ -93,7 +105,7 @@ function create(req, res, next) {
 
     const newCaso = casosRepository.create(newCasoData);
 
-    return res.status(201).json({ data: newCaso });
+    return res.status(201).json(newCaso);
   } catch (err) {
     return next(err);
   }
@@ -129,7 +141,7 @@ function update(req, res, next) {
     }
 
     const updatedCaso = casosRepository.update(newCasoData, casoId);
-    return res.status(200).json({ data: updatedCaso });
+    return res.status(200).json(updatedCaso);
   } catch (err) {
     return next(err);
   }
@@ -167,7 +179,7 @@ function patch(req, res, next) {
     }
 
     const updatedCaso = casosRepository.update(casoDataToUpdate, casoId);
-    return res.status(200).json({ data: updatedCaso });
+    return res.status(200).json(updatedCaso);
   } catch (err) {
     return next(err);
   }
@@ -227,7 +239,7 @@ function showResponsibleAgente(req, res, next) {
       return next(createError(404, { agente_id: `Agente com ID: ${agenteId} não encontrado.` }));
     }
 
-    return res.status(200).json({ data: agenteInfo });
+    return res.status(200).json(agenteInfo);
   } catch (err) {
     return next(err);
   }

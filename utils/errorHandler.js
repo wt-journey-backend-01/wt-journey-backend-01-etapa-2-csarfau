@@ -6,6 +6,21 @@ const errorMessages = {
   500: 'Erro interno do servidor.',
 };
 
+/** Gera um erro customizado
+ *
+ * @param { string } message
+ * @param { string } status
+ * @param { string[] } errors
+ * @returns
+ */
+export function createError(status, errors = []) {
+  return {
+    status,
+    errors,
+    isCustom: true,
+  };
+}
+
 /** Middleware para tratar os erros personalizados
  *
  * @param { Error } err - Array de erros encontrados

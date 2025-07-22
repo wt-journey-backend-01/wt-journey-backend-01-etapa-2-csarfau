@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import * as z from 'zod';
 import { agentesRepository } from '../repositories/agentesRepository.js';
-import { createError } from '../utils/createError.js';
+import { createError } from '../utils/errorHandler.js';
 
 const newAgenteSchema = z.object({
   nome: z.string("O campo 'nome' deve ser uma string.").min(1, "O campo 'nome' é obrigatório."),
@@ -53,7 +53,15 @@ function index(req, res, next) {
       });
     }
 
-    res.status(200).json({ data: agentes });
+    if ((cargo || sort) && agentes.length < 1) {
+      return next(createError(404, { query: 'Não foram encontrados agentes com os parâmetros informados.' }));
+    }
+
+    if (agentes.length < 1) {
+      return next(createError(404, { casos: 'Nenhum agente encontrado.' }));
+    }
+
+    res.status(200).json(agentes);
   } catch (err) {
     return next(err);
   }
@@ -68,7 +76,11 @@ function index(req, res, next) {
  */
 function show(req, res, next) {
   try {
-    const agenteId = z.uuid("O parâmetro 'id' deve ser um UUID válido.").parse(req.params.id);
+    const { id: agenteId } = z
+      .object({
+        id: z.uuid("O parâmetro 'id' deve ser um UUID válido."),
+      })
+      .parse(req.params);
 
     const agente = agentesRepository.findById(agenteId);
 
@@ -76,7 +88,7 @@ function show(req, res, next) {
       return next(createError(404, { agente_id: `Agente com ID: ${agenteId} não encontrado.` }));
     }
 
-    return res.status(200).json({ data: agente });
+    return res.status(200).json(agente);
   } catch (err) {
     return next(err);
   }
@@ -97,7 +109,7 @@ function create(req, res, next) {
 
     const newAgente = agentesRepository.create(newAgenteData);
 
-    return res.status(201).json({ data: newAgente });
+    return res.status(201).json(newAgente);
   } catch (err) {
     return next(err);
   }
@@ -127,7 +139,7 @@ function update(req, res, next) {
     const newAgenteData = newAgenteSchema.parse(req.body);
 
     const updatedAgente = agentesRepository.update(newAgenteData, agenteId);
-    return res.status(200).json({ data: updatedAgente });
+    return res.status(200).json(updatedAgente);
   } catch (err) {
     return next(err);
   }
@@ -157,7 +169,7 @@ function patch(req, res, next) {
     const agenteDataToUpdate = newAgenteSchema.partial().parse(req.body);
 
     const updatedAgente = agentesRepository.update(agenteDataToUpdate, agenteId);
-    return res.status(200).json({ data: updatedAgente });
+    return res.status(200).json(updatedAgente);
   } catch (err) {
     return next(err);
   }

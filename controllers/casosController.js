@@ -1,6 +1,6 @@
 import { casosRepository } from '../repositories/casosRepository.js';
 import { v4 as uuidv4 } from 'uuid';
-import { createError } from '../utils/createError.js';
+import { createError } from '../utils/errorHandler.js';
 import { agentesRepository } from '../repositories/agentesRepository.js';
 import * as z from 'zod';
 
@@ -223,7 +223,11 @@ function remove(req, res, next) {
  */
 function showResponsibleAgente(req, res, next) {
   try {
-    const casoId = z.uuid("O parâmetro 'id' deve ser um UUID válido.").parse(req.params.id);
+    const { id: casoId } = z
+      .object({
+        id: z.uuid("O campo 'id' deve ser um UUID válido."),
+      })
+      .parse(req.params);
 
     const caso = casosRepository.findById(casoId);
 

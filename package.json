@@ -5,7 +5,7 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "dev": "node --watch server.js"
+    "dev": "node --watch --env-file=.env server.js"
   },
   "repository": {
     "type": "git",
@@ -20,6 +20,8 @@
   "homepage": "https://github.com/wt-journey-backend-01/wt-journey-backend-01-etapa-2-csarfau#readme",
   "dependencies": {
     "express": "^5.1.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "uuid": "^11.1.0",
     "zod": "^4.0.5"
   },

@@ -66,7 +66,7 @@ const router = express.Router();
  *                 example: "Erro interno do servidor."
  *
  *   schemas:
- *     Caso:
+ *     CasoBase:
  *       type: object
  *       required:
  *         - titulo
@@ -74,10 +74,6 @@ const router = express.Router();
  *         - status
  *         - agente_id
  *       properties:
- *         id:
- *           type: string
- *           format: uuid
- *           description: ID gerado automaticamente para um caso
  *         titulo:
  *           type: string
  *           description: Título do caso
@@ -92,6 +88,25 @@ const router = express.Router();
  *           type: string
  *           format: uuid
  *           description: ID do agente responsável pelo caso
+ *
+ *     NewCaso:
+ *       allOf:
+ *         - $ref: '#/components/schemas/CasoBase'
+ *       example:
+ *         titulo: homicidio
+ *         descricao: Disparos foram reportados às 22:33 do dia 10/07/2007 na região do bairro União, resultando na morte da vítima, um homem de 45 anos.
+ *         status: aberto
+ *         agente_id: 401bccf5-cf9e-489d-8412-446cd169a0f1
+ *
+ *     Caso:
+ *       allOf:
+ *         - type: object
+ *           properties:
+ *             id:
+ *               type: string
+ *               format: uuid
+ *               description: ID gerado automaticamente para um caso
+ *         - $ref: '#/components/schemas/CasoBase'
  *       example:
  *         id: f5fb2ad5-22a8-4cb4-90f2-8733517a0d46
  *         titulo: homicidio
@@ -172,7 +187,7 @@ router.get('/', casosController.index);
  *       500:
  *         $ref: '#/components/responses/ServerError'
  */
-router.get('/search', casosController.index);
+router.get('/search', casosController.search);
 
 /**
  * @openapi
@@ -224,25 +239,7 @@ router.get('/:id', casosController.show);
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: string
- *                   format: uuid
- *                   description: ID do agente
- *                 nome:
- *                   type: string
- *                   description: Nome do agente
- *                   example: "Rommel Carneiro"
- *                 dataDeIncorporacao:
- *                   type: string
- *                   format: date
- *                   description: Data de incorporação do agente
- *                   example: 2024-09-10
- *                 cargo:
- *                   type: string
- *                   description: Cargo do agente
- *                   example: delegado
+ *               $ref: '#/components/schemas/Agente'
  *       400:
  *         $ref: '#/components/responses/BadRequest'
  *       404:
@@ -263,7 +260,7 @@ router.get('/:id/agente', casosController.showResponsibleAgente);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Caso'
+ *             $ref: '#/components/schemas/NewCaso'
  *     responses:
  *       201:
  *         description: Caso criado com sucesso
@@ -299,7 +296,7 @@ router.post('/', casosController.create);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Caso'
+ *             $ref: '#/components/schemas/NewCaso'
  *     responses:
  *       200:
  *         description: Caso atualizado com sucesso

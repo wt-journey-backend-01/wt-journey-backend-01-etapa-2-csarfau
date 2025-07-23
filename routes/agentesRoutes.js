@@ -71,17 +71,13 @@ const router = express.Router();
  *                   query: "Não foram encontrados agentes com os parâmetros informados."
  *
  *   schemas:
- *     Agente:
+ *     AgenteBase:
  *       type: object
  *       required:
  *         - nome
  *         - dataDeIncorporacao
  *         - cargo
  *       properties:
- *         id:
- *           type: string
- *           format: uuid
- *           description: ID gerado automaticamente para um agente
  *         nome:
  *           type: string
  *           description: Nome do agente
@@ -92,11 +88,30 @@ const router = express.Router();
  *         cargo:
  *           type: string
  *           description: Cargo do agente
+ *
+ *     NewAgente:
+ *       allOf:
+ *         - $ref: '#/components/schemas/AgenteBase'
+ *       example:
+ *         nome: "Rommel Carneiro"
+ *         dataDeIncorporacao: "1992-10-04"
+ *         cargo: "delegado"
+ *
+ *     Agente:
+ *       allOf:
+ *          - type:
+ *            properties:
+ *              id:
+ *                type: string
+ *                format: uuid
+ *                description: ID gerado automaticamente para um agente
+ *          - $ref: '#/components/schemas/AgenteBase'
  *       example:
  *         id: "401bccf5-cf9e-489d-8412-446cd169a0f1"
  *         nome: "Rommel Carneiro"
  *         dataDeIncorporacao: "1992-10-04"
  *         cargo: "delegado"
+ *
  */
 
 /**
@@ -185,7 +200,7 @@ router.get('/:id', agentesController.show);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Agente'
+ *             $ref: '#/components/schemas/NewAgente'
  *     responses:
  *       201:
  *         description: Agente criado com sucesso
@@ -221,7 +236,7 @@ router.post('/', agentesController.create);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Agente'
+ *             $ref: '#/components/schemas/NewAgente'
  *     responses:
  *       200:
  *         description: Caso atualizado com sucesso

@@ -1,145 +1,130 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 7 créditos restantes para usar o sistema de feedback AI.
+Você tem 6 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para csarfau:
 
-Nota final: **31.3/100**
+Nota final: **74.6/100**
 
-Olá, csarfau! 👋🚓 Que jornada você está trilhando com essa API do Departamento de Polícia, hein? Antes de mais nada, parabéns pelo empenho e por já ter implementado várias funcionalidades essenciais! 🎉 Vamos juntos destrinchar seu código para deixar essa API tinindo e pronta para a ação!
+# Feedback para csarfau 🚓✨
 
----
-
-## 🎯 O que você já mandou bem — vamos celebrar! 🎉
-
-- Você estruturou seu projeto em módulos bem organizados: `routes`, `controllers`, `repositories` e até um middleware para tratamento de erros (`errorHandler`). Isso é fundamental para manter o código limpo e escalável. 👏
-- A arquitetura MVC está presente, com responsabilidades bem distribuídas.
-- Seu uso do `express.Router()` para separar rotas está correto, e as rotas para `/agentes` e `/casos` estão definidas.
-- Você está usando o Zod para validação de dados, o que é ótimo para garantir a integridade das informações recebidas. Isso mostra cuidado com a qualidade do seu código.
-- Implementou tratamento de erros com mensagens personalizadas e status HTTP adequados para muitos casos, incluindo 404 e 400.
-- Os testes de validação para payloads com formato incorreto estão passando, o que indica que seu esquema de validação está funcionando bem.
-- Você ainda tentou implementar filtros e ordenação em alguns endpoints, o que é um ótimo passo para funcionalidades extras.
+Olá, csarfau! Primeiro, parabéns pelo esforço e pela entrega dessa API para o Departamento de Polícia! 🎉 Você organizou muito bem o projeto, com a separação clara entre rotas, controllers e repositories, o que é fundamental para a escalabilidade e manutenção do código. Além disso, adorei ver que você implementou filtros em alguns endpoints e já está usando o Zod para validação de dados — isso mostra um cuidado importante com a qualidade e robustez da API. 👏
 
 ---
 
-## 🔍 Análise Profunda dos Pontos que Precisam de Atenção
+## O que você mandou muito bem! 🌟
 
-### 1. IDs usados para agentes e casos **não são UUIDs válidos**
+- **Estrutura modular:** Seu projeto está organizado exatamente como esperado, com pastas separadas para `routes`, `controllers`, `repositories`, `utils` e `docs`. Isso facilita muito a leitura e manutenção do código.
 
-Você recebeu penalidade por isso, e isso é crucial! A validação de IDs UUID está presente no seu código, por exemplo:
+- **Uso do Express Router:** Você usou o `express.Router()` para modularizar as rotas de agentes e casos, deixando o `server.js` limpo e focado apenas na configuração do servidor e middlewares.
 
-```js
-const agenteId = z.uuid("O parâmetro 'id' deve ser um UUID válido.").parse(req.params.id);
-```
+- **Validação com Zod:** A validação dos dados com schemas Zod está muito bem feita, garantindo que o payload tenha os formatos e tipos corretos antes de prosseguir.
 
-Mas o problema está no momento em que você cria esses IDs. No `controllers/agentesController.js`, você usa o `uuidv4()` para gerar o ID:
+- **Tratamento de erros consistente:** Você criou um middleware de erro e usa ele para enviar respostas padronizadas com mensagens e status code apropriados.
 
-```js
-newAgenteData = { id: uuidv4(), ...newAgenteData };
-```
+- **Filtros e ordenação simples:** Nos endpoints de agentes e casos você já implementou filtros por cargo, status, agente_id e ordenação por data de incorporação — isso é um ótimo diferencial!
 
-E o mesmo no `casosController.js`:
+- **Bônus conquistados:**  
+  - Filtragem de casos por status e agente_id ✔️  
+  - Criação de agentes e casos com validação ✔️  
+  - Atualizações completas e parciais (PUT e PATCH) ✔️  
+  - Exclusão de agentes e casos ✔️  
 
-```js
-newCasoData = { id: uuidv4(), ...newCasoData };
-```
-
-Então, teoricamente, os IDs deveriam ser UUIDs válidos. Isso indica que, na prática, os IDs podem estar sendo criados corretamente, mas possivelmente em algum lugar do fluxo os dados estão sendo alterados, ou talvez os testes estejam enviando IDs inválidos e seu código não está bloqueando isso adequadamente.
-
-**Mas, ao analisar seu repositório, percebi que você está retornando diretamente os objetos com IDs gerados pelo uuid, então o problema pode estar em outro lugar:**
-
-- Verifique se em algum momento você está manipulando os dados e sobrescrevendo o `id` com valores inválidos.
-- Confirme que os IDs usados nas requisições de atualização, busca e remoção estão sendo tratados com o validador `z.uuid()` como você fez, para garantir que IDs inválidos sejam rejeitados.
-
-**Dica:** Para garantir que IDs inválidos não passem, sempre valide os parâmetros `req.params.id` com o Zod, como você fez, e retorne erro 400 para IDs mal formatados.
-
-👉 Recomendo revisar este conteúdo para entender melhor UUIDs e validação de IDs:  
-https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400  
-https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_ (Validação de dados em APIs Node.js/Express)
+Você está no caminho certo, parabéns! 🎯
 
 ---
 
-### 2. Falha em múltiplos testes base importantes nos endpoints `/agentes` e `/casos`
+## Pontos para melhorar e destravar a API 🚧
 
-Percebi que vários testes essenciais para criação, leitura, atualização e remoção de agentes e casos falharam. Isso indica que, apesar da estrutura dos endpoints estar no lugar, algo dentro da lógica não está funcionando como esperado.
+### 1. **Validação e proteção do campo `id` nos recursos**
 
-**Vamos analisar o fluxo mais fundamental:**
+Percebi que, apesar de você validar muito bem os dados no corpo das requisições, os campos `id` dos agentes e casos podem ser alterados via PUT e PATCH, o que não é desejado. O `id` deve ser imutável após a criação, porque ele é o identificador único do recurso.
 
-- Você tem os endpoints configurados nas rotas, por exemplo, em `routes/agentesRoutes.js`:
-
-```js
-router.post('/', agentesController.create);
-```
-
-- E o controller `create` está implementado:
+Exemplo do problema no seu código do agente (controllers/agentesController.js):
 
 ```js
-function create(req, res, next) {
-  try {
-    let newAgenteData = newAgenteSchema.parse(req.body);
-    newAgenteData = { id: uuidv4(), ...newAgenteData };
-    const newAgente = agentesRepository.create(newAgenteData);
-    return res.status(201).json({ data: newAgente });
-  } catch (err) {
-    return next(err);
-  }
+function update(req, res, next) {
+  // ...
+  const newAgenteData = newAgenteSchema.parse(req.body);  // Aqui o schema permite 'id'?
+  const updatedAgente = agentesRepository.update(newAgenteData, agenteId);
+  // ...
 }
 ```
 
-- O repositório também está correto ao adicionar o novo agente no array:
+E no PATCH também:
 
 ```js
-function create(newAgenteData) {
-  agentes.push(newAgenteData);
-  return newAgenteData;
+function patch(req, res, next) {
+  // ...
+  const agenteDataToUpdate = newAgenteSchema.partial().parse(req.body);
+  // ...
 }
 ```
 
-**Porém, o problema pode estar no formato dos dados que você está armazenando e retornando.**
+**O que está acontecendo:** Seu schema `newAgenteSchema` não define o campo `id`, mas ao fazer merge no update, se o cliente enviar um `id` no corpo, ele será mesclado e sobrescreve o existente no repositório. Isso é um problema de segurança e integridade dos dados.
 
-⚠️ Um detalhe importante: No seu schema Zod para `newAgenteSchema`, você usa:
+**Como corrigir:** Você deve garantir que o campo `id` nunca seja alterado. Uma forma prática é:
 
-```js
-dataDeIncorporacao: z.iso.date({ ... })
-```
+- Não aceitar `id` no corpo da requisição (remover se existir).
+- Ou criar um schema de validação que explicitamente não permita o `id`.
+- Ou, após validar, remover o `id` do objeto antes de atualizar.
 
-Mas no seu payload JSON, a data provavelmente vem como string no formato `"YYYY-MM-DD"`. O Zod `z.iso.date()` espera um objeto `Date`, não uma string. Isso pode estar causando rejeição na validação ou dados mal interpretados.
-
-**Solução:** Para validar datas que chegam como string, use `z.string().refine()` para validar o formato ISO, ou use o `z.preprocess()` para converter a string em Date antes da validação.
-
-Exemplo de ajuste:
+Por exemplo, no patch:
 
 ```js
-const newAgenteSchema = z.object({
-  nome: z.string().min(1),
-  dataDeIncorporacao: z.preprocess(
-    (arg) => (typeof arg === 'string' ? new Date(arg) : arg),
-    z.date().max(new Date(), { message: 'A data de incorporação não pode ser no futuro.' })
-  ),
-  cargo: z.string().min(1),
-});
+const agenteDataToUpdate = newAgenteSchema.partial().parse(req.body);
+delete agenteDataToUpdate.id; // Remove id se enviado
+const updatedAgente = agentesRepository.update(agenteDataToUpdate, agenteId);
 ```
 
-Esse ajuste vai garantir que a data enviada como string seja convertida para `Date` antes da validação, evitando erros.
-
-👉 Recomendo este vídeo para entender melhor validação de dados e tratamento de datas:  
-https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_
+**Recurso recomendado:**  
+- [Validação de dados em APIs Node.js com Zod](https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_)  
+- [Status 400 Bad Request - MDN](https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400) (para entender melhor quando rejeitar dados inválidos)
 
 ---
 
-### 3. Filtros, ordenação e buscas (funcionalidades bônus) não estão funcionando corretamente
+### 2. **Falha ao buscar agentes e casos inexistentes — mensagens e status 404**
 
-Você tentou implementar filtros e ordenação, por exemplo:
+Você fez um ótimo trabalho tratando o caso de recurso não encontrado, retornando 404 com mensagens customizadas. Porém, notei que em alguns pontos as mensagens podem não estar sendo disparadas corretamente.
+
+Por exemplo, no controller de agentes (`show`):
 
 ```js
-const { cargo, sort } = searchQuerySchema.parse(req.query);
-
-let agentes = agentesRepository.findAll();
-
-if (cargo) {
-  agentes = agentes.filter((a) => a.cargo.toLowerCase() === cargo.toLowerCase());
+if (!agente) {
+  return next(createError(404, { agente_id: `Agente com ID: ${agenteId} não encontrado.` }));
 }
+```
 
+Isso está correto, mas em alguns testes específicos, a API não está retornando o status 404 quando esperado. Isso pode estar relacionado a:
+
+- Como o middleware de erro está tratando o erro criado com `createError`.
+- Ou se o repositório está retornando `undefined` corretamente quando o recurso não existe.
+
+**Verifique** se o middleware de erro (`errorHandler.js`) está enviando o status correto e a mensagem no formato esperado.
+
+---
+
+### 3. **Endpoint `/casos/search` está usando o mesmo controller que `/casos`**
+
+No arquivo `routes/casosRoutes.js`, você fez:
+
+```js
+router.get('/search', casosController.index);
+```
+
+Ou seja, o endpoint de busca por palavra-chave está usando o método `index` do controller, que também é usado para listar todos os casos. Isso pode funcionar, mas pode causar confusão e problemas de manutenção.
+
+Além disso, o schema de query aceita `q` para busca, mas o endpoint `/casos` não documenta isso e nem trata no controller como filtro obrigatório para `/search`.
+
+**Sugestão:** Separe a lógica do endpoint `/casos/search` em uma função controller específica para busca, que valide e trate o parâmetro `q` explicitamente.
+
+---
+
+### 4. **Filtro de agentes por data de incorporação com ordenação não está 100% robusto**
+
+Você implementou a ordenação por `dataDeIncorporacao` e `-dataDeIncorporacao` no controller de agentes, o que é ótimo:
+
+```js
 if (sort) {
   agentes = agentes.sort((a, b) => {
     const dataA = new Date(a.dataDeIncorporacao);
@@ -149,93 +134,87 @@ if (sort) {
 }
 ```
 
-Porém, os testes indicam que os filtros e ordenação não passaram.
+Porém, o teste indica que a ordenação pode não estar funcionando perfeitamente em todos os casos. Isso pode acontecer se:
 
-**Possíveis causas:**
+- Os dados `dataDeIncorporacao` não estiverem sempre no formato ISO válido.
+- Ou se a comparação de datas não estiver correta (subtração entre objetos Date funciona, mas sempre verifique se os valores são válidos).
 
-- O problema da data descrito acima pode estar impactando a ordenação, pois se `dataDeIncorporacao` não está sendo armazenada como `Date` ou em um formato válido, a ordenação pode falhar.
-- O filtro por cargo parece correto, mas verifique se o `cargo` está sempre em caixa baixa para comparação, ou se pode haver espaços em branco no dado armazenado.
-- O endpoint `/casos` tem filtros por `agente_id`, `status` e busca por texto, que parecem implementados, mas podem estar falhando pela mesma razão: dados inconsistentes ou payloads mal validados.
-
-👉 Recomendo revisar este conteúdo para manipulação de arrays e filtros no JavaScript:  
-https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI
+**Sugestão:** Confirme que os dados de datas estão sempre strings no formato ISO e que a conversão para `Date` não retorna `Invalid Date`. Você pode usar `Date.parse()` para validar.
 
 ---
 
-### 4. Organização e nomenclatura dos arquivos e pastas
+### 5. **Filtros de busca por keywords no título e descrição dos casos**
 
-Sua estrutura está muito próxima do esperado, parabéns! Só uma pequena observação: o middleware `errorHandler` está dentro da pasta `middlewares`, mas no seu `project_structure.txt` o esperado é que o arquivo de tratamento de erro esteja em `utils/errorHandler.js`.
+Você implementou o filtro `q` para busca por palavra-chave em casos, o que é ótimo! Porém, o teste indica que o endpoint pode não estar funcionando corretamente.
 
-Seu arquivo atual:
-
-```
-middlewares/
- └── errorHandler.js
-```
-
-Esperado:
-
-```
-utils/
- └── errorHandler.js
-```
-
-**Por quê isso importa?**
-
-Seguir a estrutura de pastas predefinida ajuda a manter o padrão do projeto e facilita a manutenção e entendimento por outras pessoas (e pelos avaliadores 😉).
-
-Se quiser, basta mover o arquivo `errorHandler.js` para a pasta `utils` e ajustar a importação no `server.js`:
+No controller:
 
 ```js
-import { errorHandler } from './utils/errorHandler.js';
+if (q) {
+  const termo = q.toLowerCase();
+  casos = casos.filter((c) => c.titulo.toLowerCase().includes(termo) || c.descricao.toLowerCase().includes(termo));
+}
 ```
 
----
+Isso está correto, mas lembre-se que o endpoint `/casos/search` está usando o método `index`, que também aceita outros filtros. Se a rota `/casos` for chamada com `q`, isso pode causar confusão.
 
-## ✨ Recomendações para você avançar com confiança
-
-1. **Ajuste a validação das datas usando `z.preprocess` para converter strings em objetos Date antes da validação.** Isso vai resolver problemas de validação e ordenação.  
-2. **Verifique se os IDs gerados pelo `uuidv4()` estão sendo usados corretamente e validados em todas as rotas.** Garanta que IDs inválidos sejam rejeitados com status 400.  
-3. **Revise os filtros e ordenação, principalmente nas datas, para garantir que os dados estejam no formato correto e a lógica de filtro funcione.**  
-4. **Padronize a estrutura do seu projeto conforme o esperado, movendo o middleware de erro para a pasta `utils`.**  
-5. **Teste cada endpoint isoladamente com ferramentas como Postman ou Insomnia para garantir que o fluxo de criação, leitura, atualização e exclusão funcione perfeitamente.**  
+**Sugestão:** Como dito no ponto 3, crie um método separado para `/casos/search` para isolar essa lógica e garantir que o parâmetro `q` seja tratado corretamente.
 
 ---
 
-## 📚 Recursos que vão te ajudar muito!
+### 6. **Endpoint para mostrar agente responsável pelo caso não está funcionando como esperado**
 
-- **Validação e tratamento de dados com Zod (incluindo datas):**  
-  https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_
+Você implementou o endpoint `/casos/:id/agente` no router e no controller, mas o teste indica que ele não está passando.
 
-- **Manipulação de arrays no JavaScript (filtros, ordenação):**  
-  https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI
+No seu controller (`showResponsibleAgente`):
 
-- **Arquitetura MVC com Node.js e Express:**  
+```js
+const agenteInfo = agentesRepository.findById(agenteId);
+
+if (!agenteInfo) {
+  return next(createError(404, { agente_id: `Agente com ID: ${agenteId} não encontrado.` }));
+}
+
+return res.status(200).json(agenteInfo);
+```
+
+Isso está correto, porém, pode estar faltando algum detalhe na rota ou na documentação Swagger que faça o teste falhar.
+
+**Sugestão:** Verifique se o router está exportando corretamente o `casosRouter` e se o middleware está sendo aplicado corretamente no `server.js` (o que parece estar ok). Também confira se o método `showResponsibleAgente` está sendo exportado e importado corretamente.
+
+---
+
+## Resumo dos pontos para focar 🚦
+
+- 🚫 **Não permita alteração do campo `id` nos recursos** durante PUT e PATCH. Garanta que o `id` seja imutável.  
+- 🛠️ **Revise o middleware de erro** para garantir que status 404 e mensagens customizadas sejam retornadas corretamente.  
+- 🔍 **Separe a lógica do endpoint `/casos/search`** em um método controller dedicado para evitar confusão e garantir o filtro por palavra-chave.  
+- 📅 **Confirme o formato e a ordenação das datas** no filtro de agentes por `dataDeIncorporacao`.  
+- 🕵️ **Cheque a implementação do endpoint `/casos/:id/agente`** para garantir que ele está funcionando e sendo exposto corretamente.  
+
+---
+
+## Dicas extras para você crescer ainda mais 🚀
+
+- Para entender melhor a arquitetura MVC e organização modular de projetos Node.js, recomendo este vídeo:  
   https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH
 
-- **Documentação oficial do Express.js sobre rotas:**  
-  https://expressjs.com/pt-br/guide/routing.html
+- Para aprofundar na manipulação de arrays e filtros em JavaScript, este vídeo é excelente:  
+  https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI
 
-- **HTTP Status Codes e boas práticas de API REST:**  
+- Para garantir que você está usando corretamente os status HTTP e middlewares no Express, dê uma olhada aqui:  
   https://youtu.be/RSZHvQomeKE
 
 ---
 
-## 📝 Resumo rápido do que focar para melhorar
+## Finalizando
 
-- Corrigir a validação e manipulação do campo `dataDeIncorporacao` para aceitar strings e converter para Date usando `z.preprocess`.
-- Garantir que todos os IDs usados (agentes e casos) sejam UUIDs válidos, e que IDs inválidos sejam rejeitados com erro 400.
-- Ajustar filtros e ordenações para funcionarem corretamente, especialmente na ordenação por datas.
-- Mover o middleware de erro para a pasta `utils` para seguir a estrutura padrão do projeto.
-- Testar todas as operações CRUD isoladamente para garantir que o fluxo está correto.
+Você está muito próximo de entregar uma API robusta, organizada e que segue boas práticas! A maioria dos conceitos está muito bem aplicada, e com alguns ajustes finos no tratamento do `id`, separação de responsabilidades e validação, sua API vai ficar ainda mais profissional. Continue com esse foco e atenção aos detalhes, porque isso faz toda a diferença no mundo real! 💪✨
 
----
+Se precisar, volte nos recursos indicados para reforçar os conceitos e conte comigo para ajudar a destravar qualquer dúvida. Você está mandando muito bem, parabéns novamente! 👏🚓
 
-Você está no caminho certo, csarfau! 🚀 Com esses ajustes, sua API vai ficar robusta, confiável e pronta para ajudar o Departamento de Polícia a gerenciar seus agentes e casos com eficiência. Continue firme, pois aprender a lidar com validação, tratamento de erros e organização de código é o que vai te tornar um(a) desenvolvedor(a) cada vez melhor! 💪
-
-Se precisar de ajuda para entender algum ponto, me chama que eu te ajudo! 😉
-
-Boa codada e até a próxima! 👮‍♂️👩‍💻✨
+Abraços e bons códigos!  
+Seu Code Buddy 🤖💙
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 

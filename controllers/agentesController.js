@@ -85,7 +85,7 @@ function show(req, res, next) {
     const agente = agentesRepository.findById(agenteId);
 
     if (!agente) {
-      return next(createError(404, { agente_id: `Agente com ID: ${agenteId} não encontrado.` }));
+      return next(createError(404, { agente_id: `Agente não encontrado.` }));
     }
 
     return res.status(200).json(agente);
@@ -137,6 +137,7 @@ function update(req, res, next) {
     }
 
     const newAgenteData = newAgenteSchema.parse(req.body);
+    delete newAgenteData.id;
 
     const updatedAgente = agentesRepository.update(newAgenteData, agenteId);
     return res.status(200).json(updatedAgente);
@@ -163,10 +164,11 @@ function patch(req, res, next) {
     const agente = agentesRepository.findById(agenteId);
 
     if (!agente) {
-      return next(createError(404, { agente_id: `Agente com ID ${agenteId} não encontrado.` }));
+      return next(createError(404, { agente_id: `Agente não encontrado.` }));
     }
 
     const agenteDataToUpdate = newAgenteSchema.partial().parse(req.body);
+    delete agenteDataToUpdate.id;
 
     const updatedAgente = agentesRepository.update(agenteDataToUpdate, agenteId);
     return res.status(200).json(updatedAgente);
@@ -193,7 +195,7 @@ function remove(req, res, next) {
     const agente = agentesRepository.findById(agenteId);
 
     if (!agente) {
-      return next(createError(404, { agente_id: `Agente com ID: ${agenteId} não encontrado.` }));
+      return next(createError(404, { agente_id: `Agente não encontrado.` }));
     }
 
     agentesRepository.remove(agenteId);

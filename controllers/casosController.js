@@ -21,12 +21,14 @@ const searchQuerySchema = z.object({
 
 /** Retorna todos os casos salvos
  *
- * @param { Response } res
- * @return { string[] } Casos salvos
+ * @param { Request } req - Requisição HTTP
+ * @param { Response } res - Resposta HTTP
+ * @param { NextFunction } next - Próximo middleware
+ * @returns { Response }
  */
 function index(req, res, next) {
   try {
-    const { agente_id, status, q } = searchQuerySchema.parse(req.query);
+    const { agente_id, status } = searchQuerySchema.parse(req.query);
 
     let casos = casosRepository.findAll();
 
@@ -38,13 +40,32 @@ function index(req, res, next) {
       casos = casos.filter((c) => c.status === status);
     }
 
+    if (casos.length < 1) {
+      return next(createError(404, { casos: 'Nenhum caso encontrado.' }));
+    }
+
+    res.status(200).json(casos);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/** Retorna os casos pela filtragem de nome ou titulo
+ *
+ * @param { Request } req - Requisição HTTP
+ * @param { Response } res - Resposta HTTP
+ * @param { NextFunction } next - Próximo middleware
+ * @returns { Response }
+ */
+function search(req, res, next) {
+  try {
+    const { q } = searchQuerySchema.parse(req.query);
+
+    let casos = casosRepository.findAll();
+
     if (q) {
       const termo = q.toLowerCase();
       casos = casos.filter((c) => c.titulo.toLowerCase().includes(termo) || c.descricao.toLowerCase().includes(termo));
-    }
-
-    if ((agente_id || status || q) && casos.length < 1) {
-      return next(createError(404, { query: 'Não foram encontrados casos com os parâmetros informados.' }));
     }
 
     if (casos.length < 1) {
@@ -75,7 +96,7 @@ function show(req, res, next) {
     const caso = casosRepository.findById(casoId);
 
     if (!caso) {
-      return next(createError(404, { caso_id: `Caso com ID: ${casoId} não encontrado.` }));
+      return next(createError(404, { caso_id: `Caso não encontrado.` }));
     }
 
     return res.status(200).json(caso);
@@ -98,7 +119,7 @@ function create(req, res, next) {
     const agente = agentesRepository.findById(newCasoData.agente_id);
 
     if (!agente) {
-      return next(createError(404, { agente_id: `Agente com ID ${newCasoData.agente_id} não encontrado.` }));
+      return next(createError(404, { agente_id: `Agente não encontrado.` }));
     }
 
     newCasoData = { id: uuidv4(), ...newCasoData };
@@ -129,15 +150,15 @@ function update(req, res, next) {
     const caso = casosRepository.findById(casoId);
 
     if (!caso) {
-      return next(createError(404, { caso_id: `Caso com ID: ${casoId} não encontrado.` }));
+      return next(createError(404, { caso_id: `Caso não encontrado.` }));
     }
 
     const newCasoData = newCasoSchema.parse(req.body);
-
+    delete newCasoData.id;
     const agente = agentesRepository.findById(newCasoData.agente_id);
 
     if (!agente) {
-      return next(createError(404, { agente_id: `Agente com ID ${newCasoData.agente_id} não encontrado.` }));
+      return next(createError(404, { agente_id: `Agente não encontrado.` }));
     }
 
     const updatedCaso = casosRepository.update(newCasoData, casoId);
@@ -165,16 +186,16 @@ function patch(req, res, next) {
     const caso = casosRepository.findById(casoId);
 
     if (!caso) {
-      return next(createError(404, { caso_id: `Caso com ID: ${casoId} não encontrado.` }));
+      return next(createError(404, { caso_id: `Caso não encontrado.` }));
     }
 
     const casoDataToUpdate = newCasoSchema.partial().parse(req.body);
-
+    delete casoDataToUpdate.id;
     if (casoDataToUpdate.agente_id) {
       const agente = agentesRepository.findById(casoDataToUpdate.agente_id);
 
       if (!agente) {
-        return next(createError(404, { agente_id: `Agente com ID ${casoDataToUpdate.agente_id} não encontrado.` }));
+        return next(createError(404, { agente_id: `Agente não encontrado.` }));
       }
     }
 
@@ -203,7 +224,7 @@ function remove(req, res, next) {
     const caso = casosRepository.findById(casoId);
 
     if (!caso) {
-      return next(createError(404, { caso_id: `Caso com ID: ${casoId} não encontrado.` }));
+      return next(createError(404, { caso_id: `Caso não encontrado.` }));
     }
 
     casosRepository.remove(casoId);
@@ -232,18 +253,18 @@ function showResponsibleAgente(req, res, next) {
     const caso = casosRepository.findById(casoId);
 
     if (!caso) {
-      return next(createError(404, { caso_id: `Caso com ID: ${casoId} não encontrado.` }));
+      return next(createError(404, { caso_id: `Caso não encontrado.` }));
     }
 
     const agenteId = caso.agente_id;
 
-    const agenteInfo = agentesRepository.findById(agenteId);
+    const agente = agentesRepository.findById(agenteId);
 
-    if (!agenteInfo) {
-      return next(createError(404, { agente_id: `Agente com ID: ${agenteId} não encontrado.` }));
+    if (!agente) {
+      return next(createError(404, { agente_id: `Agente não encontrado.` }));
     }
 
-    return res.status(200).json(agenteInfo);
+    return res.status(200).json(agente);
   } catch (err) {
     return next(err);
   }
@@ -257,4 +278,5 @@ export const casosController = {
   patch,
   remove,
   showResponsibleAgente,
+  search,
 };

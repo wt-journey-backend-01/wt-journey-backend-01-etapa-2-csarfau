@@ -124,8 +124,8 @@ const router = express.Router();
  *         name: status
  *         schema:
  *           type: string
- *           description: Status do caso
  *           enum: [aberto, solucionado]
+ *         description: Status do caso
  *     responses:
  *       200:
  *         description: Lista de casos retornada com sucesso
@@ -282,10 +282,18 @@ router.post('/', casosController.create);
 
 /**
  * @openapi
- * /casos:
+ * /casos/{id}:
  *   put:
  *     summary: Atualiza um caso completamente
  *     tags: [Casos]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         required: true
+ *         description: ID do caso que o agente é responável
  *     requestBody:
  *       required: true
  *       content:

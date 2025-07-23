@@ -58,7 +58,7 @@ function index(req, res, next) {
     }
 
     if (agentes.length < 1) {
-      return next(createError(404, { casos: 'Nenhum agente encontrado.' }));
+      return next(createError(404, { agentes: 'Nenhum agente encontrado.' }));
     }
 
     res.status(200).json(agentes);

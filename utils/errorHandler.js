@@ -29,18 +29,6 @@ export function createError(status, errors = []) {
  * @returns { Response }
  */
 export function errorHandler(err, req, res, next) {
-  if (err instanceof z.ZodError) {
-    return res.status(400).json({
-      status: 400,
-      message: errorMessages[400],
-      errors: err.issues.reduce((acc, error) => {
-        const path = error.path;
-        acc[path] = error.message;
-        return acc;
-      }, {}),
-    });
-  }
-
   if (err.isCustom) {
     return res.status(err.status).json({
       status: err.status,

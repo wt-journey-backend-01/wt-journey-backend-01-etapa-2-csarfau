@@ -4,22 +4,24 @@ import { agentesRepository } from '../repositories/agentesRepository.js';
 import { createError } from '../utils/errorHandler.js';
 import { formatZodErrors } from '../utils/formatZodErrors.js';
 
-const newAgenteSchema = z.object({
-  nome: z.string("O campo 'nome' deve ser uma string.").min(1, "O campo 'nome' é obrigatório."),
-  dataDeIncorporacao: z
-    .string("O campo 'dataDeIncorporacao' deve ser uma string.")
-    .nonempty("O campo 'dataDeIncorporacao' é obrigatório.")
-    .refine((data) => /^\d{4}-\d{2}-\d{2}$/.test(data), {
-      message: "O campo 'dataDeIncorporacao' deve estar no formato YYYY-MM-DD.",
-    })
-    .refine((data) => !isNaN(Date.parse(data)), {
-      message: 'A data informada é inválida.',
-    })
-    .refine((data) => new Date(data) <= new Date(), {
-      message: 'A data de incorporação não pode ser maior que a data atual.',
-    }),
-  cargo: z.string("O campo 'cargo' deve ser uma string.").min(1, "O campo 'cargo' é obrigatório."),
-});
+const newAgenteSchema = z
+  .object({
+    nome: z.string("O campo 'nome' deve ser uma string.").min(1, "O campo 'nome' é obrigatório."),
+    dataDeIncorporacao: z
+      .string("O campo 'dataDeIncorporacao' deve ser uma string.")
+      .nonempty("O campo 'dataDeIncorporacao' é obrigatório.")
+      .refine((data) => /^\d{4}-\d{2}-\d{2}$/.test(data), {
+        message: "O campo 'dataDeIncorporacao' deve estar no formato YYYY-MM-DD.",
+      })
+      .refine((data) => !isNaN(Date.parse(data)), {
+        message: 'A data informada é inválida.',
+      })
+      .refine((data) => new Date(data) <= new Date(), {
+        message: 'A data de incorporação não pode ser maior que a data atual.',
+      }),
+    cargo: z.string("O campo 'cargo' deve ser uma string.").min(1, "O campo 'cargo' é obrigatório."),
+  })
+  .strict();
 
 const searchQuerySchema = z.object({
   cargo: z.string("O parâmetro 'cargo' deve ser uma string.").optional(),
@@ -202,8 +204,7 @@ function patch(req, res, next) {
       return next(createError(400, { agente_id: 'Não é possível atualizar o ID do agente.' }));
     }
 
-    const agenteDataToUpdate = newAgenteSchema.partial().parse(req.body);
-    delete agenteDataToUpdate.id;
+    const agenteDataToUpdate = newAgenteSchema.partial().strict().parse(req.body);
 
     const updatedAgente = agentesRepository.update(agenteDataToUpdate, agenteId);
     return res.status(200).json(updatedAgente);

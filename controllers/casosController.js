@@ -223,7 +223,7 @@ function patch(req, res, next) {
       return next(createError(400, { caso_id: 'Não é possível atualizar o ID do caso.' }));
     }
 
-    const casoDataToUpdate = newCasoSchema.partial().parse(req.body);
+    const casoDataToUpdate = newCasoSchema.partial().strict().parse(req.body);
     delete casoDataToUpdate.id;
     if (casoDataToUpdate.agente_id) {
       const agente = agentesRepository.findById(casoDataToUpdate.agente_id);

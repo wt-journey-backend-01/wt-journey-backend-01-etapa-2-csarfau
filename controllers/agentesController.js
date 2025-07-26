@@ -181,6 +181,10 @@ function update(req, res, next) {
  * @returns { Response }
  */
 function patch(req, res, next) {
+  if (!req.body || Object.keys(req.body).length < 1) {
+    return next(createError(400, { body: 'Informe pelo menos 1 campo para ser atualizado.' }));
+  }
+
   try {
     const { id: agenteId } = z
       .object({

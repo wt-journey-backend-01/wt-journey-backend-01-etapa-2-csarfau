@@ -1,305 +1,247 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 5 créditos restantes para usar o sistema de feedback AI.
+Você tem 4 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para csarfau:
 
-Nota final: **74.6/100**
+Nota final: **81.1/100**
 
-# Feedback para csarfau 🚓🚀
+# Feedback do seu Desafio API REST com Express.js 🚓✨
 
-Olá, csarfau! Antes de mais nada, parabéns pelo empenho e pela entrega desse projeto desafiador! 🎉 Construir uma API RESTful completa com Node.js e Express, incluindo validações, tratamento de erros e uma arquitetura modular, não é tarefa fácil, e você fez um ótimo trabalho! Vamos juntos analisar seu código para que você possa avançar ainda mais!
-
----
-
-## 🎯 Pontos Fortes que Merecem Destaque
-
-- Sua organização do projeto está **muito boa**! Você estruturou bem as pastas de `routes`, `controllers`, `repositories`, `utils` e `docs`, seguindo a arquitetura MVC de forma clara e modular. Isso é fundamental para manter o código escalável e fácil de manter.
-
-- A implementação dos endpoints básicos para `/agentes` e `/casos` está bem feita. Vi que você criou os métodos HTTP principais (GET, POST, PUT, PATCH, DELETE) para ambos os recursos, e isso já é um grande avanço!
-
-- Você utilizou o `zod` para validação dos dados, o que é excelente para garantir a integridade dos dados que chegam na API.
-
-- Também implementou tratamento de erros personalizado com o middleware `errorHandler`, o que deixa a API mais robusta e amigável para quem consome.
-
-- Parabéns pelos bônus que você conseguiu implementar! 🎉 Você fez a filtragem por status e agente nos casos funcionar corretamente, além de implementar o endpoint para buscar o agente responsável por um caso. Isso mostra que você foi além do básico, mesmo que ainda tenha alguns detalhes para ajustar.
+Olá, csarfau! Tudo bem? 😄 Primeiro, quero te parabenizar pelo esforço e pelo código que você entregou! Construir uma API RESTful com Node.js e Express.js, organizando em rotas, controllers e repositories, não é tarefa simples, e você fez um ótimo trabalho montando a base da aplicação. Vamos juntos analisar seus pontos fortes e onde podemos melhorar para deixar seu projeto ainda mais robusto e completo! 💪🚀
 
 ---
 
-## 🕵️‍♂️ Análise Detalhada dos Pontos que Precisam de Atenção
+## 🎉 O que você mandou muito bem
 
-### 1. Falha ao receber status 404 ao tentar buscar um agente inexistente
+- **Estrutura do projeto organizada:** Seu projeto está muito bem estruturado, com pastas separadas para `routes`, `controllers`, `repositories`, `utils` e `docs`. Isso é essencial para escalabilidade e manutenção. 👏  
+  Seu `server.js` está limpinho, importando os routers e o middleware de erro, além do Swagger para documentação — ótima prática!
 
-- **O que eu vi:** Seu código no controller `agentesController.js` para o método `show` está correto ao validar o UUID e buscar o agente:
+- **Implementação dos endpoints básicos:** Você implementou os métodos HTTP para os recursos `/agentes` e `/casos` (GET, POST, PUT, PATCH, DELETE). Isso é a espinha dorsal da API funcionando! 👍
+
+- **Validação de dados com Zod:** O uso do Zod para validar os dados recebidos é um ponto forte. Isso ajuda a garantir que o payload está correto antes de qualquer operação. 
+
+- **Tratamento de erros consistente:** Você usa um middleware de erro centralizado (`errorHandler`) e cria erros customizados com mensagens claras para os clientes da API.
+
+- **Filtros básicos implementados:** A filtragem por `status` e `agente_id` nos casos, e por `cargo` e ordenação por `dataDeIncorporacao` nos agentes, estão funcionando. Isso mostra que você entendeu bem como trabalhar com query params para refinar buscas.
+
+- **Bônus conquistados:**  
+  - Implementou corretamente o filtro simples por status e agente nos casos.  
+  - Implementou a ordenação de agentes por data de incorporação em ordem crescente e decrescente.  
+  Isso demonstra atenção em ir além do básico, parabéns! 🎯
+
+---
+
+## 🧐 Pontos para melhorar — Vamos destrinchar juntos!
+
+### 1. Mensagens de erro customizadas para argumentos inválidos (agentes e casos)
+
+Percebi que os testes indicam falha na personalização das mensagens de erro para parâmetros inválidos tanto em agentes quanto em casos. Isso sugere que, embora você esteja usando o Zod para validação, as mensagens que chegam no cliente não estão no formato esperado.
+
+**Por que isso acontece?**
+
+- O Zod, por padrão, lança erros que precisam ser tratados para formatar as mensagens de erro no formato JSON esperado pela API (com `status`, `message` e `errors` detalhando cada campo).  
+- No seu código, você está passando o erro direto para o middleware de erro, mas não vi uma transformação clara desses erros do Zod para o formato customizado esperado.
+
+**Onde isso impacta?**
+
+- Isso afeta endpoints como o GET `/agentes` com filtros inválidos, POST `/casos` com payload errado, etc.  
+- O cliente da API recebe erros genéricos ou mal formatados, o que prejudica a usabilidade.
+
+**Como melhorar?**
+
+Você pode criar uma função que converta os erros do Zod em um objeto com as mensagens personalizadas e passar isso para o `createError`. Exemplo simplificado:
 
 ```js
-const agente = agentesRepository.findById(agenteId);
+function formatZodErrors(err) {
+  const errors = {};
+  err.errors.forEach((e) => {
+    errors[e.path[0]] = e.message;
+  });
+  return errors;
+}
 
-if (!agente) {
-  return next(createError(404, { agente_id: `Agente não encontrado.` }));
+// No catch dos controllers
+catch (err) {
+  if (err.name === 'ZodError') {
+    return next(createError(400, formatZodErrors(err)));
+  }
+  return next(err);
 }
 ```
 
-- **Possível causa raiz:** Isso indica que o endpoint está implementado, mas pode haver algum problema em como os IDs são gerados, armazenados ou comparados no repositório.
+Assim, o cliente recebe algo como:
 
-- **O que investigar:** Confirme se no `agentesRepository.js` o método `findById` está funcionando corretamente, especialmente se os IDs estão sendo armazenados e comparados como strings UUID. No seu código:
-
-```js
-function findById(agenteId) {
-  return agentes.find((agente) => agente.id === agenteId);
+```json
+{
+  "status": 400,
+  "message": "Parâmetros inválidos.",
+  "errors": {
+    "titulo": "O campo 'titulo' deve ser uma string.",
+    "status": "O campo 'status' deve ser somente 'aberto' ou 'solucionado'."
+  }
 }
 ```
 
-Está correto, mas se os IDs armazenados não forem UUIDs válidos ou se o cliente estiver enviando IDs errados, o 404 será retornado. 
+Isso deixa seu API muito mais amigável e profissional!
 
-- **Dica:** Teste criando um agente e depois buscando exatamente pelo ID retornado para garantir a consistência.
-
----
-
-### 2. Recebe status code 400 ao tentar atualizar agente parcialmente (PATCH) com payload em formato incorreto
-
-- **O que eu vi:** O patch do agente usa o schema parcial do `newAgenteSchema` para validação:
-
-```js
-const agenteDataToUpdate = newAgenteSchema.partial().parse(req.body);
-```
-
-- Isso é correto para validar campos opcionais.
-
-- **Possível causa raiz:** Se o payload enviado contém campos extras ou com tipos incorretos, o `zod` lança erro, que você repassa para o middleware de erro, retornando 400.
-
-- **O que melhorar:** Você já tem isso implementado, mas garanta que o cliente entenda quais campos são aceitos e quais não são. Além disso, seu schema no `newAgenteSchema` tem uma pequena inconsistência na validação da data:
-
-```js
-dataDeIncorporacao: z.iso
-  .date({
-    error: (issue) =>
-      issue.input === undefined || issue.input === ''
-        ? "O campo 'dataDeIncorporacao' é obrigatório."
-        : "O campo 'dataDeIncorporacao' deve estar no formato YYYY-MM-DD.",
-  })
-  .refine((date) => new Date(date) <= new Date(), {
-    error: 'A data de incorporação não pode ser maior que a data atual.',
-  }),
-```
-
-- Note que `z.iso.date` não é uma função válida do Zod. O correto para validar data no formato ISO string é usar `z.string().refine()` ou `z.string().datetime()` (nas versões mais recentes do Zod).
-
-- **Correção sugerida:**
-
-```js
-dataDeIncorporacao: z.string()
-  .nonempty("O campo 'dataDeIncorporacao' é obrigatório.")
-  .refine((data) => !isNaN(Date.parse(data)), {
-    message: "O campo 'dataDeIncorporacao' deve estar no formato YYYY-MM-DD.",
-  })
-  .refine((data) => new Date(data) <= new Date(), {
-    message: 'A data de incorporação não pode ser maior que a data atual.',
-  }),
-```
-
-- Isso vai garantir que a data seja uma string válida e no formato esperado.
-
-- **Recomendo:** [Validação de dados em APIs Node.js/Express com Zod](https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_).
+📚 Recomendo fortemente o vídeo sobre [Validação de Dados em APIs Node.js/Express](https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_) para entender melhor como tratar e formatar erros de validação.
 
 ---
 
-### 3. Recebe status 404 ao tentar criar caso com id de agente inválido/inexistente
+### 2. Endpoint de busca do agente responsável por um caso (`GET /casos/:id/agente`)
 
-- **O que eu vi:** No `casosController.js`, você faz a checagem do agente antes de criar o caso:
+Você implementou a função `showResponsibleAgente` no controller e a rota está definida, o que é ótimo! Porém, o teste indica que esse endpoint não está funcionando corretamente.
+
+**O que pode estar acontecendo?**
+
+- O código do controller parece correto, mas pode haver problemas no repositório ou na forma como os dados são buscados.  
+- Verifique se o `casosRepository.findById` realmente retorna o caso correto e se o `agentesRepository.findById` está retornando o agente responsável.  
+- Além disso, veja se não há problemas de digitação ou inconsistência nos nomes das variáveis.
+
+**Dica prática:**
+
+Faça logs temporários para conferir os valores retornados:
+
+```js
+const caso = casosRepository.findById(casoId);
+console.log('Caso encontrado:', caso);
+
+const agente = agentesRepository.findById(caso?.agente_id);
+console.log('Agente responsável:', agente);
+```
+
+Isso ajuda a entender se os dados estão chegando como esperado.
+
+---
+
+### 3. Endpoint de busca de casos por palavras-chave (`GET /casos/search?q=...`)
+
+Você implementou o método `search` no controller e a rota está definida, o que é ótimo! Porém, o teste indica que a filtragem por palavras-chave no título ou descrição não está funcionando.
+
+**Possíveis causas:**
+
+- O schema `searchQuerySchema` define `q` como opcional, e você faz a filtragem correta se `q` existir.  
+- Verifique se a rota `/casos/search` está sendo chamada corretamente e se o filtro está sendo aplicado.  
+- Também cheque se o array `casos` está populado com dados de teste que contenham as palavras-chave.
+
+Se o problema for a rota, teste a rota isoladamente para garantir que o Express está encaminhando para o controller.
+
+---
+
+### 4. Validação e ordenação de agentes por data de incorporação com sort
+
+Você já implementou o filtro e ordenação no controller de agentes. No entanto, os testes indicam que a ordenação não está funcionando corretamente.
+
+**Possíveis causas:**
+
+- No seu código:
+
+```js
+if (sort) {
+  agentes = agentes.sort((a, b) => {
+    const dataA = new Date(a.dataDeIncorporacao);
+    const dataB = new Date(b.dataDeIncorporacao);
+    return sort === 'dataDeIncorporacao' ? dataA - dataB : dataB - dataA;
+  });
+}
+```
+
+- O problema aqui é que subtrair objetos `Date` diretamente não funciona como esperado, pois `dataA` e `dataB` são objetos `Date`, não números. Você precisa usar `.getTime()` para obter o timestamp numérico para a comparação.
+
+**Correção sugerida:**
+
+```js
+if (sort) {
+  agentes = agentes.sort((a, b) => {
+    const dataA = new Date(a.dataDeIncorporacao).getTime();
+    const dataB = new Date(b.dataDeIncorporacao).getTime();
+    return sort === 'dataDeIncorporacao' ? dataA - dataB : dataB - dataA;
+  });
+}
+```
+
+Isso garante que a ordenação funcione corretamente.
+
+---
+
+### 5. Status HTTP e mensagens ao criar caso com agente inexistente
+
+No controller de casos, na função `create`, você verifica se o agente existe:
 
 ```js
 const agente = agentesRepository.findById(newCasoData.agente_id);
 
 if (!agente) {
-  return next(createError(404, { agente_id: `Agente não encontrado.` }));
+  return next(createError(400, { agente_id: `Agente informado não existe.` }));
 }
 ```
 
-- Isso está correto e é uma boa prática para garantir integridade referencial.
+O teste esperava um status 404 para agente inexistente, mas você está retornando 400.
 
-- **Possível causa raiz:** O problema pode estar no fato de que o agente com o ID informado realmente não existe (o que é esperado), ou que o ID está mal formatado e não passa na validação do Zod.
+**Por que isso importa?**
 
-- **Dica:** Certifique-se de que o cliente está enviando um UUID válido no campo `agente_id` e que esse agente já existe no sistema.
+- Status 400 (Bad Request) indica que o cliente enviou dados inválidos.  
+- Status 404 (Not Found) indica que um recurso referenciado não foi encontrado.  
+- Como o `agente_id` refere-se a um recurso externo (agente), o correto é responder 404 para deixar claro que o agente não existe.
 
-- **Recomendo:** Leia mais sobre [status 404 e validação de IDs](https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/404).
-
----
-
-### 4. Recebe status 404 ao tentar buscar um caso por ID inválido
-
-- **O que eu vi:** O método `show` no `casosController.js` está validando o UUID e buscando o caso:
+**Correção sugerida:**
 
 ```js
-const caso = casosRepository.findById(casoId);
-
-if (!caso) {
-  return next(createError(404, { caso_id: `Caso não encontrado.` }));
+if (!agente) {
+  return next(createError(404, { agente_id: `Agente informado não existe.` }));
 }
 ```
 
-- Está correto.
+---
 
-- **Possível causa raiz:** Se o ID não existe, o 404 é esperado. Se o ID não é um UUID válido, o Zod deve retornar 400 (bad request).
+### 6. Mensagens de erro ao tentar atualizar parcialmente com PATCH com payload incorreto
 
-- **Dica:** Certifique-se de que o cliente está enviando IDs corretos.
+O teste indica que ao tentar atualizar parcialmente um agente com um payload inválido, o status 400 esperado não está sendo retornado.
+
+**Análise:**
+
+- No seu controller, você faz a validação com `newAgenteSchema.partial().parse(req.body)`.  
+- Se o payload estiver errado, o Zod lança erro, que é capturado e passado para o middleware de erro.  
+- Porém, como comentado no ponto 1, o erro do Zod precisa ser formatado para retornar o JSON customizado. Caso contrário, o cliente pode receber um erro genérico ou um status incorreto.
+
+**Portanto, ao melhorar o tratamento de erros do Zod (como sugerido no item 1), esse problema será resolvido automaticamente.**
 
 ---
 
-### 5. Recebe status 404 ao tentar atualizar um caso por completo (PUT) de um caso inexistente
+## 📚 Recursos para você se aprofundar e corrigir os pontos acima
 
-- **O que eu vi:** No `update` do `casosController.js`, você faz:
-
-```js
-const caso = casosRepository.findById(casoId);
-
-if (!caso) {
-  return next(createError(404, { caso_id: `Caso não encontrado.` }));
-}
-```
-
-- Isso é correto.
-
-- **Possível causa raiz:** Caso inexistente, o 404 é o comportamento esperado.
-
----
-
-### 6. Recebe status 404 ao tentar atualizar um caso parcialmente (PATCH) de um caso inexistente
-
-- **O que eu vi:** Mesmo que o caso não exista, você retorna 404, o que está correto.
-
----
-
-### 7. Penalidades: Consegue alterar ID do agente com método PUT e PATCH, e do caso com PUT
-
-- **Aqui está o ponto mais crítico!** 🚨
-
-- **O que eu vi:** No `update` e `patch` dos controllers, você está deletando o campo `id` do objeto de dados atualizados para evitar alteração do ID, o que é ótimo:
-
-```js
-delete newAgenteData.id;
-```
-
-- Porém, no `patch` do agente e no `update` do caso, você chama o método `update` do repositório que faz um merge dos dados:
-
-```js
-return (agentes[agenteIndex] = {
-  ...agentes[agenteIndex],
-  ...agenteDataToUpdate,
-});
-```
-
-- Isso é correto, mas o problema pode estar no fato de que se o campo `id` vier no payload, ele pode sobrescrever o `id` existente, porque o `delete` no controller pode não estar funcionando corretamente para evitar essa alteração.
-
-- **Possível causa raiz:** Talvez o campo `id` não está sendo removido em todos os casos, ou o cliente consegue enviar o `id` no corpo e o código não está bloqueando essa alteração em todos os métodos.
-
-- **Solução:** Além de deletar o campo `id` no controller, você pode melhorar a validação no `zod` para que o campo `id` nunca seja aceito no corpo da requisição.
-
-- Por exemplo, no schema de criação e atualização, não inclua o campo `id`. Para PATCH, use `.partial()` mas garanta que `id` não seja aceito.
-
-- Ou, no controller, verifique explicitamente e retorne erro 400 se o cliente tentar alterar o `id`.
-
-- **Trecho para reforçar a proteção do ID:**
-
-```js
-if ('id' in req.body) {
-  return next(createError(400, { id: 'Não é permitido alterar o campo id.' }));
-}
-```
-
-- Isso evita que o cliente tente alterar o `id` e melhora a segurança da API.
-
-- **Recomendo:** Veja mais sobre [validação de dados e proteção de campos imutáveis](https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_).
-
----
-
-### 8. Implementação parcial dos bônus de filtragem e mensagens de erro personalizadas
-
-- Vi que você conseguiu implementar a filtragem por `status` e `agente_id` nos casos, o que é ótimo!
-
-- Porém, a filtragem por palavras-chave na busca de casos (`/casos/search`) e a filtragem por data de incorporação com ordenação nos agentes ainda não estão completas.
-
-- Também as mensagens de erro personalizadas para argumentos inválidos de agentes e casos precisam ser melhoradas para cobrir todos os campos e cenários.
-
-- **O que fazer:** Continue aprimorando a validação com `zod` e o tratamento de erros para que as mensagens sejam sempre claras e específicas, como você já começou a fazer.
-
----
-
-## 💡 Recomendações de Aprendizado para Você
-
-- Para entender melhor a estrutura e organização do projeto, recomendo fortemente este vídeo que explica a arquitetura MVC com Node.js e Express:  
-  https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH
-
-- Para aprofundar na validação de dados e tratamento de erros com Zod e Express, veja:  
-  https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_
-
-- Para reforçar o entendimento dos métodos HTTP, status codes e fluxo de requisição/resposta em Express:  
+- Para entender melhor como organizar rotas e controllers e usar o Express:  
+  https://expressjs.com/pt-br/guide/routing.html  
   https://youtu.be/RSZHvQomeKE
 
-- Para manipular arrays em memória com métodos como `find`, `filter`, `push` e `splice`, que você usa nos repositories, recomendo:  
+- Para aprimorar o tratamento de erros e validação com Zod:  
+  https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_
+
+- Para entender melhor o protocolo HTTP e status codes:  
+  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400  
+  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/404
+
+- Para manipular arrays e ordenação corretamente com JavaScript:  
   https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI
 
 ---
 
-## 📋 Resumo dos Principais Pontos para Melhorar
+## 📝 Resumo rápido para você focar
 
-- Corrigir a validação da data `dataDeIncorporacao` no schema do agente para usar `z.string()` e validar formato ISO, pois `z.iso.date` não existe.
-
-- Garantir que o campo `id` **não possa ser alterado** via PUT ou PATCH, bloqueando explicitamente essa tentativa e retornando erro 400.
-
-- Completar a implementação dos filtros bônus, especialmente a busca por palavra-chave nos casos e ordenação por data de incorporação nos agentes.
-
-- Melhorar as mensagens de erro personalizadas para cobrir todos os campos e situações, tornando a API mais amigável.
-
-- Testar cuidadosamente a criação, busca e atualização dos agentes e casos usando IDs válidos para evitar 404 inesperados.
+- **Trate e formate os erros do Zod para enviar respostas de erro customizadas e amigáveis para o cliente.**  
+- **Corrija a ordenação por data no filtro de agentes usando `.getTime()` para comparar datas.**  
+- **Ajuste o status HTTP para 404 quando um agente referenciado em um caso não existir.**  
+- **Verifique o endpoint `/casos/:id/agente` para garantir que busca e retorna corretamente o agente responsável.**  
+- **Confirme a implementação da busca por palavras-chave em `/casos/search` para garantir que o filtro funciona conforme esperado.**
 
 ---
 
-## Finalizando... 🚀
+## Finalizando...
 
-csarfau, você está no caminho certo e já tem uma base muito sólida! Com alguns ajustes na validação e reforço na proteção dos campos imutáveis, sua API vai ficar ainda mais robusta e confiável. Continue praticando, testando e explorando os recursos do Express e do Zod — a experiência é o que vai te levar para o próximo nível! 💪✨
+Você já está com uma base muito sólida e caminhando para uma API REST bem estruturada e funcional! 🚀 Com esses ajustes, seu projeto vai ficar ainda mais profissional e alinhado com as melhores práticas de desenvolvimento. Continue assim, aprendendo e aprimorando! Estou aqui torcendo pelo seu sucesso e disponível para ajudar no que precisar! 🤗💙
 
-Se precisar, volte aos vídeos recomendados para consolidar esses conceitos. Estou aqui torcendo pelo seu sucesso e pronto para ajudar sempre que precisar! 😉
-
-Um abraço e até a próxima revisão! 👋🚓
-
----
-
-# Código de exemplo para proteger o campo `id` no controller:
-
-```js
-function update(req, res, next) {
-  try {
-    if ('id' in req.body) {
-      return next(createError(400, { id: 'Não é permitido alterar o campo id.' }));
-    }
-    // resto do código...
-  } catch (err) {
-    return next(err);
-  }
-}
-```
-
-# Código corrigido para validação da data no agente:
-
-```js
-const newAgenteSchema = z.object({
-  nome: z.string().min(1, "O campo 'nome' é obrigatório."),
-  dataDeIncorporacao: z.string()
-    .nonempty("O campo 'dataDeIncorporacao' é obrigatório.")
-    .refine((data) => !isNaN(Date.parse(data)), {
-      message: "O campo 'dataDeIncorporacao' deve estar no formato YYYY-MM-DD.",
-    })
-    .refine((data) => new Date(data) <= new Date(), {
-      message: 'A data de incorporação não pode ser maior que a data atual.',
-    }),
-  cargo: z.string().min(1, "O campo 'cargo' é obrigatório."),
-});
-```
-
----
-
-Continue firme e conte comigo para o que precisar! 🚀👨‍💻👩‍💻
+Um abraço de Code Buddy! 👨‍💻✨
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 

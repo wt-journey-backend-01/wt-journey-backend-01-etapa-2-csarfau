@@ -11,11 +11,14 @@ const newCasoSchema = z.object({
   agente_id: z.uuid("O campo 'agente_id' deve ser um UUID válido."),
 });
 
-const searchQuerySchema = z.object({
+const indexQuerySchema = z.object({
   agente_id: z.uuid("O campo 'agente_id' deve ser um UUID válido.").optional(),
   status: z
     .enum(['aberto', 'solucionado'], "O parâmetro 'status' deve ser somente 'aberto' ou 'solucionado'.")
     .optional(),
+});
+
+const searchQuerySchema = z.object({
   q: z.string('O termo de busca deve ser uma string').optional(),
 });
 
@@ -28,7 +31,7 @@ const searchQuerySchema = z.object({
  */
 function index(req, res, next) {
   try {
-    const { agente_id, status } = searchQuerySchema.parse(req.query);
+    const { agente_id, status } = indexQuerySchema.parse(req.query);
 
     let casos = casosRepository.findAll();
 
@@ -163,7 +166,7 @@ function update(req, res, next) {
     }
 
     if (req.body.id) {
-      return next(createError(400, { agente_id: 'Não é possível atualizar o ID do caso.' }));
+      return next(createError(400, { caso_id: 'Não é possível atualizar o ID do caso.' }));
     }
 
     const newCasoData = newCasoSchema.parse(req.body);
@@ -210,7 +213,7 @@ function patch(req, res, next) {
     }
 
     if (req.body.id) {
-      return next(createError(400, { agente_id: 'Não é possível atualizar o ID do caso.' }));
+      return next(createError(400, { caso_id: 'Não é possível atualizar o ID do caso.' }));
     }
 
     const casoDataToUpdate = newCasoSchema.partial().parse(req.body);

@@ -7,10 +7,13 @@ import { formatZodErrors } from '../utils/formatZodErrors.js';
 const newAgenteSchema = z.object({
   nome: z.string("O campo 'nome' deve ser uma string.").min(1, "O campo 'nome' é obrigatório."),
   dataDeIncorporacao: z
-    .string()
+    .string("O campo 'dataDeIncorporacao' deve ser uma string.")
     .nonempty("O campo 'dataDeIncorporacao' é obrigatório.")
-    .refine((data) => !isNaN(Date.parse(data)), {
+    .refine((data) => /^\d{4}-\d{2}-\d{2}$/.test(data), {
       message: "O campo 'dataDeIncorporacao' deve estar no formato YYYY-MM-DD.",
+    })
+    .refine((data) => !isNaN(Date.parse(data)), {
+      message: 'A data informada é inválida.',
     })
     .refine((data) => new Date(data) <= new Date(), {
       message: 'A data de incorporação não pode ser maior que a data atual.',

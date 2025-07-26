@@ -46,6 +46,9 @@ function index(req, res, next) {
 
     res.status(200).json(casos);
   } catch (err) {
+    if (err.name === 'ZodError') {
+      return next(createError(400, formatZodErrors(err)));
+    }
     return next(err);
   }
 }
@@ -74,6 +77,9 @@ function search(req, res, next) {
 
     res.status(200).json(casos);
   } catch (err) {
+    if (err.name === 'ZodError') {
+      return next(createError(400, formatZodErrors(err)));
+    }
     return next(err);
   }
 }
@@ -119,7 +125,7 @@ function create(req, res, next) {
     const agente = agentesRepository.findById(newCasoData.agente_id);
 
     if (!agente) {
-      return next(createError(400, { agente_id: `Agente informado não existe.` }));
+      return next(createError(404, { agente_id: `Agente informado não existe.` }));
     }
 
     newCasoData = { id: uuidv4(), ...newCasoData };
@@ -128,6 +134,9 @@ function create(req, res, next) {
 
     return res.status(201).json(newCaso);
   } catch (err) {
+    if (err.name === 'ZodError') {
+      return next(createError(400, formatZodErrors(err)));
+    }
     return next(err);
   }
 }
@@ -168,6 +177,9 @@ function update(req, res, next) {
     const updatedCaso = casosRepository.update(newCasoData, casoId);
     return res.status(200).json(updatedCaso);
   } catch (err) {
+    if (err.name === 'ZodError') {
+      return next(createError(400, formatZodErrors(err)));
+    }
     return next(err);
   }
 }
@@ -214,6 +226,9 @@ function patch(req, res, next) {
     const updatedCaso = casosRepository.update(casoDataToUpdate, casoId);
     return res.status(200).json(updatedCaso);
   } catch (err) {
+    if (err.name === 'ZodError') {
+      return next(createError(400, formatZodErrors(err)));
+    }
     return next(err);
   }
 }
@@ -243,6 +258,9 @@ function remove(req, res, next) {
 
     res.status(204).send();
   } catch (err) {
+    if (err.name === 'ZodError') {
+      return next(createError(400, formatZodErrors(err)));
+    }
     return next(err);
   }
 }
@@ -268,9 +286,7 @@ function showResponsibleAgente(req, res, next) {
       return next(createError(404, { caso_id: `Caso não encontrado.` }));
     }
 
-    const agenteId = caso.agente_id;
-
-    const agente = agentesRepository.findById(agenteId);
+    const agente = agentesRepository.findById(caso.agente_id);
 
     if (!agente) {
       return next(createError(404, { agente_id: `Agente não encontrado.` }));
@@ -278,6 +294,9 @@ function showResponsibleAgente(req, res, next) {
 
     return res.status(200).json(agente);
   } catch (err) {
+    if (err.name === 'ZodError') {
+      return next(createError(400, formatZodErrors(err)));
+    }
     return next(err);
   }
 }

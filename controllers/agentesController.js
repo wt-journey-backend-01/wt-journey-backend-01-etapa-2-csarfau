@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as z from 'zod';
 import { agentesRepository } from '../repositories/agentesRepository.js';
 import { createError } from '../utils/errorHandler.js';
+import { formatZodErrors } from '../utils/formatZodErrors.js';
 
 const newAgenteSchema = z.object({
   nome: z.string("O campo 'nome' deve ser uma string.").min(1, "O campo 'nome' é obrigatório."),
@@ -46,8 +47,8 @@ function index(req, res, next) {
 
     if (sort) {
       agentes = agentes.sort((a, b) => {
-        const dataA = new Date(a.dataDeIncorporacao);
-        const dataB = new Date(b.dataDeIncorporacao);
+        const dataA = new Date(a.dataDeIncorporacao).getTime();
+        const dataB = new Date(b.dataDeIncorporacao).getTime();
         return sort === 'dataDeIncorporacao' ? dataA - dataB : dataB - dataA;
       });
     }
@@ -62,6 +63,9 @@ function index(req, res, next) {
 
     res.status(200).json(agentes);
   } catch (err) {
+    if (err.name === 'ZodError') {
+      return next(createError(400, formatZodErrors(err)));
+    }
     return next(err);
   }
 }
@@ -89,6 +93,9 @@ function show(req, res, next) {
 
     return res.status(200).json(agente);
   } catch (err) {
+    if (err.name === 'ZodError') {
+      return next(createError(400, formatZodErrors(err)));
+    }
     return next(err);
   }
 }
@@ -110,6 +117,9 @@ function create(req, res, next) {
 
     return res.status(201).json(newAgente);
   } catch (err) {
+    if (err.name === 'ZodError') {
+      return next(createError(400, formatZodErrors(err)));
+    }
     return next(err);
   }
 }
@@ -145,6 +155,9 @@ function update(req, res, next) {
     const updatedAgente = agentesRepository.update(newAgenteData, agenteId);
     return res.status(200).json(updatedAgente);
   } catch (err) {
+    if (err.name === 'ZodError') {
+      return next(createError(400, formatZodErrors(err)));
+    }
     return next(err);
   }
 }
@@ -184,6 +197,9 @@ function patch(req, res, next) {
     const updatedAgente = agentesRepository.update(agenteDataToUpdate, agenteId);
     return res.status(200).json(updatedAgente);
   } catch (err) {
+    if (err.name === 'ZodError') {
+      return next(createError(400, formatZodErrors(err)));
+    }
     return next(err);
   }
 }
@@ -213,6 +229,9 @@ function remove(req, res, next) {
 
     res.status(204).send();
   } catch (err) {
+    if (err.name === 'ZodError') {
+      return next(createError(400, formatZodErrors(err)));
+    }
     return next(err);
   }
 }

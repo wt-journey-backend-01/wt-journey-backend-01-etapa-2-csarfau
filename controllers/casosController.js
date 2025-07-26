@@ -69,7 +69,7 @@ function search(req, res, next) {
     }
 
     if (casos.length < 1) {
-      return next(createError(404, { casos: 'Nenhum caso encontrado.' }));
+      return next(createError(404, { casos: 'Nenhum caso encontrado com a frase informada.' }));
     }
 
     res.status(200).json(casos);
@@ -119,7 +119,7 @@ function create(req, res, next) {
     const agente = agentesRepository.findById(newCasoData.agente_id);
 
     if (!agente) {
-      return next(createError(404, { agente_id: `Agente não encontrado.` }));
+      return next(createError(400, { agente_id: `Agente informado não existe.` }));
     }
 
     newCasoData = { id: uuidv4(), ...newCasoData };
@@ -153,6 +153,10 @@ function update(req, res, next) {
       return next(createError(404, { caso_id: `Caso não encontrado.` }));
     }
 
+    if (req.body.id) {
+      return next(createError(400, { agente_id: 'Não é possível atualizar o ID do caso.' }));
+    }
+
     const newCasoData = newCasoSchema.parse(req.body);
     delete newCasoData.id;
     const agente = agentesRepository.findById(newCasoData.agente_id);
@@ -176,6 +180,10 @@ function update(req, res, next) {
  * @returns { Response }
  */
 function patch(req, res, next) {
+  if (!req.body || Object.keys(req.body).length < 1) {
+    return next(createError(400, { body: 'Informe pelo menos 1 campo para ser atualizado.' }));
+  }
+
   try {
     const { id: casoId } = z
       .object({
@@ -187,6 +195,10 @@ function patch(req, res, next) {
 
     if (!caso) {
       return next(createError(404, { caso_id: `Caso não encontrado.` }));
+    }
+
+    if (req.body.id) {
+      return next(createError(400, { agente_id: 'Não é possível atualizar o ID do caso.' }));
     }
 
     const casoDataToUpdate = newCasoSchema.partial().parse(req.body);

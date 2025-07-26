@@ -5,15 +5,14 @@ import { createError } from '../utils/errorHandler.js';
 
 const newAgenteSchema = z.object({
   nome: z.string("O campo 'nome' deve ser uma string.").min(1, "O campo 'nome' é obrigatório."),
-  dataDeIncorporacao: z.iso
-    .date({
-      error: (issue) =>
-        issue.input === undefined || issue.input === ''
-          ? "O campo 'dataDeIncorporacao' é obrigatório."
-          : "O campo 'dataDeIncorporacao' deve estar no formato YYYY-MM-DD.",
+  dataDeIncorporacao: z
+    .string()
+    .nonempty("O campo 'dataDeIncorporacao' é obrigatório.")
+    .refine((data) => !isNaN(Date.parse(data)), {
+      message: "O campo 'dataDeIncorporacao' deve estar no formato YYYY-MM-DD.",
     })
-    .refine((date) => new Date(date) <= new Date(), {
-      error: 'A data de incorporação não pode ser maior que a data atual.',
+    .refine((data) => new Date(data) <= new Date(), {
+      message: 'A data de incorporação não pode ser maior que a data atual.',
     }),
   cargo: z.string("O campo 'cargo' deve ser uma string.").min(1, "O campo 'cargo' é obrigatório."),
 });
@@ -136,6 +135,10 @@ function update(req, res, next) {
       return next(createError(404, { agente_id: `Agente com o ID: ${agenteId} não encontrado.` }));
     }
 
+    if (req.body.id) {
+      return next(createError(400, { agente_id: 'Não é possível atualizar o ID do agente.' }));
+    }
+
     const newAgenteData = newAgenteSchema.parse(req.body);
     delete newAgenteData.id;
 
@@ -154,6 +157,10 @@ function update(req, res, next) {
  * @returns { Response }
  */
 function patch(req, res, next) {
+  if (!req.body || Object.keys(req.body).length < 1) {
+    return next(createError(400, { body: 'Informe pelo menos 1 campo para ser atualizado.' }));
+  }
+
   try {
     const { id: agenteId } = z
       .object({
@@ -165,6 +172,10 @@ function patch(req, res, next) {
 
     if (!agente) {
       return next(createError(404, { agente_id: `Agente não encontrado.` }));
+    }
+
+    if (req.body.id) {
+      return next(createError(400, { agente_id: 'Não é possível atualizar o ID do agente.' }));
     }
 
     const agenteDataToUpdate = newAgenteSchema.partial().parse(req.body);

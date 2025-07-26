@@ -143,10 +143,9 @@ function create(req, res, next) {
 
     return res.status(201).json(newCaso);
   } catch (err) {
-    if (err.name === 'ZodError') {
-      return next(createError(400, formatZodErrors(err)));
-    }
-    return next(err);
+    const isInvalidId = err.issues.length === 1 && err.issues[0].path[0] === 'agente_id';
+    const statusCode = isInvalidId ? 404 : 400;
+    return next(createError(statusCode, formatZodErrors(err)));
   }
 }
 
@@ -187,7 +186,7 @@ function update(req, res, next) {
     return res.status(200).json(updatedCaso);
   } catch (err) {
     if (err.name === 'ZodError') {
-      const isInvalidId = err.issues.length === 1 && err.issues[0].path[0] === 'id';
+      const isInvalidId = err.issues.length === 1 && err.issues[0].path[0] === ('id' || 'agente_id');
       const statusCode = isInvalidId ? 404 : 400;
       return next(createError(statusCode, formatZodErrors(err)));
     }

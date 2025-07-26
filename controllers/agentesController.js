@@ -18,7 +18,12 @@ const newAgenteSchema = z.object({
     .refine((data) => new Date(data) <= new Date(), {
       message: 'A data de incorporação não pode ser maior que a data atual.',
     }),
-  cargo: z.string("O campo 'cargo' deve ser uma string.").min(1, "O campo 'cargo' é obrigatório."),
+  cargo: z
+    .string("O campo 'cargo' deve ser uma string.")
+    .min(1, "O campo 'cargo' é obrigatório.")
+    .refine((data) => /^[A-Za-z]+$/.test(data), {
+      message: "O campo 'cargo' deve conter apenas letras.",
+    }),
 });
 
 const searchQuerySchema = z.object({

@@ -2,16 +2,14 @@
 
 # 🧪 Relatório de Avaliação – Journey Levty Etapa 1 - csarfau
 
-**Data:** 26/07/2025 16:43
+**Data:** 26/07/2025 18:11
 
-**Nota Final:** `97.68/100`
+**Nota Final:** `100.00/100`
 **Status:** ✅ Aprovado
 
 ---
 ## ✅ Requisitos Obrigatórios
-- Foram encontrados `1` problemas nos requisitos obrigatórios. Veja abaixo os testes que falharam:
-  - ⚠️ **Falhou no teste**: `UPDATE: Recebe status code 400 ao tentar atualizar agente parcialmente com método PATCH e payload em formato incorreto`
-    - **Melhoria sugerida**: Nenhuma sugestão de melhoria disponível.
+- Todos os requisitos básicos foram atendidos. Excelente trabalho!
 
 ## ⭐ Itens de Destaque (recupera até 40 pontos)
 - Você conquistou `2` bônus! Excelente trabalho nos detalhes adicionais!

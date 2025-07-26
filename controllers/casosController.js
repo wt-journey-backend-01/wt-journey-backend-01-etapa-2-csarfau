@@ -110,6 +110,9 @@ function show(req, res, next) {
 
     return res.status(200).json(caso);
   } catch (err) {
+    if (err.name === 'ZodError') {
+      return next(createError(400, formatZodErrors(err)));
+    }
     next(err);
   }
 }
@@ -131,7 +134,7 @@ function create(req, res, next) {
       return next(createError(404, { agente_id: `Agente informado não existe.` }));
     }
 
-    newCasoData = { id: uuidv4(), ...newCasoData };
+    newCasoData = { id: uuidv4(), agente_id: agente.id, ...newCasoData };
 
     const newCaso = casosRepository.create(newCasoData);
 

@@ -2,6 +2,7 @@ import { casosRepository } from '../repositories/casosRepository.js';
 import { v4 as uuidv4 } from 'uuid';
 import { createError } from '../utils/errorHandler.js';
 import { agentesRepository } from '../repositories/agentesRepository.js';
+import { formatZodErrors } from '../utils/formatZodErrors.js';
 import * as z from 'zod';
 
 const newCasoSchema = z.object({

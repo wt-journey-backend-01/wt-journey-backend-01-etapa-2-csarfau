@@ -93,8 +93,10 @@ function show(req, res, next) {
 
     return res.status(200).json(agente);
   } catch (err) {
+    console.log(err.issues);
+
     if (err.name === 'ZodError') {
-      const isInvalidId = err.issues.length === 1 && err.issues[0].path['id'];
+      const isInvalidId = err.issues.length === 1 && err.issues[0].path[0] === 'id';
       const statusCode = isInvalidId ? 404 : 400;
       return next(createError(statusCode, formatZodErrors(err)));
     }
@@ -159,7 +161,7 @@ function update(req, res, next) {
   } catch (err) {
     if (err.name === 'ZodError') {
       if (err.name === 'ZodError') {
-        const isInvalidId = err.issues.length === 1 && err.issues[0].path['id'];
+        const isInvalidId = err.issues.length === 1 && err.issues[0].path[0] === 'id';
         const statusCode = isInvalidId ? 404 : 400;
         return next(createError(statusCode, formatZodErrors(err)));
       }
@@ -204,7 +206,7 @@ function patch(req, res, next) {
     return res.status(200).json(updatedAgente);
   } catch (err) {
     if (err.name === 'ZodError') {
-      const isInvalidId = err.issues.length === 1 && err.issues[0].path['id'];
+      const isInvalidId = err.issues.length === 1 && err.issues[0].path[0] === 'id';
       const statusCode = isInvalidId ? 404 : 400;
       return next(createError(statusCode, formatZodErrors(err)));
     }
@@ -238,7 +240,7 @@ function remove(req, res, next) {
     res.status(204).send();
   } catch (err) {
     if (err.name === 'ZodError') {
-      const isInvalidId = err.issues.length === 1 && err.issues[0].path['id'];
+      const isInvalidId = err.issues.length === 1 && err.issues[0].path[0] === 'id';
       const statusCode = isInvalidId ? 404 : 400;
       return next(createError(statusCode, formatZodErrors(err)));
     }
